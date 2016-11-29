@@ -449,23 +449,18 @@ instance ToHtml AdminViewUsers where
                                 (uilabel by)
                         | by <- [minBound..] ]
             table_ [class_ "admin-table"] $ do
+                -- The AllUsers here makes sure there is no 'search' query parameter
+                -- initially. The input field is adding it afterward.
+                let searchterm = filters & usersQueryF .~ AllUsers
+                    placehld   = fromMaybe "Nutzersuche" (filters ^? usersQueryF . searchUsers . unSearchUsers)
+
                 thead_ . tr_ $ do
                     th_ nil
                     th_ "Name"
                     th_ "Klasse"
                     th_ "Rolle"
                     th_ $ button_ [class_ "btn-cta", onclick_ U.adminCreateUser] "Nutzer anlegen"
-                    th_ $ do
-                        div_ [class_ "inline-search-container"] $ do
-                            -- The AllUsers here makes sure there is no 'search' query parameter
-                            -- initially. The input field is adding it afterward.
-                            let filters' = filters & usersQueryF .~ AllUsers
-                                placehld = fromMaybe "Nutzersuche" (filters ^? usersQueryF . searchUsers . unSearchUsers)
-                            formMethod_ "GET" [class_ "form"]
-                                        (U.adminViewUsers' $ Just filters') $ do
-                                input_ [name_ "search", type_ "text", class_ "inline-search-input",
-                                        placeholder_ placehld]
-                                button_ [type_ "submit", class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil
+                    th_ $ searchBox "search" (U.adminViewUsers' $ Just searchterm) placehld
 
                 let renderUserInfoRow :: forall m. (Monad m) => User -> HtmlT m ()
                     renderUserInfoRow user = do
@@ -542,13 +537,7 @@ instance ToHtml AdminViewClasses where
                             , onclick_ U.adminCreateClass
                             ]
                             "Klasse anlegen"
-                    th_ $ do
-                        div_ [class_ "inline-search-container"] $ do  -- see also: ToHtml instance of AdminViewUser
-                            formMethod_ "GET" [class_ "form"]
-                                        U.adminViewClasses $ do
-                                input_ [name_ "search", type_ "text", class_ "inline-search-input",
-                                        placeholder_ (fromMaybe "Klassensuche" (filters ^? searchClasses . unSearchClasses))]
-                                button_ [type_ "submit", class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil
+                    th_ $ searchBox "search" U.adminViewClasses placehld
 
                 tbody_ $ case classes of
                     []  -> tr_ $ td_ [class_ "container-not-found"] "(Keine Einträge.)"
@@ -556,6 +545,8 @@ instance ToHtml AdminViewClasses where
                         td_ $ clss ^. className . html
                         td_ $ toHtmlRaw nbsp
                         td_ $ a_ [href_ $ U.adminEditClass clss] "bearbeiten"
+        where
+            placehld = fromMaybe "Klassensuche" (filters ^? searchClasses . unSearchClasses)
 
 -- | FIXME: re-visit application logic.  we should really be able to change everybody into every
 -- role, and the class field should be hidden / displayed as appropriate.  see issue #197.

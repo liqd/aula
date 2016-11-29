@@ -36,6 +36,7 @@ module Frontend.Core
     , userAvatarImg, userAvatarImg'
     , numLikes, percentLikes, numVotes, percentVotes
     , callToActionOnList, callToActionOnList'
+    , searchBox
 
       -- * pages
     , Page(..)
@@ -349,6 +350,14 @@ callToActionOnList'
     -> HtmlT m ()
 callToActionOnList' onCta =
     callToActionOnList onCta id
+
+searchBox :: (Monad m, HasPath p) => ST -> p a -> ST -> HtmlT m ()
+searchBox fld action placehld =
+    div_ [class_ "inline-search-container"] $ do
+        formMethod_ "GET" [class_ "form"] action $ do
+            input_ [name_ fld, type_ "text", class_ "inline-search-input",
+                    placeholder_ placehld]
+            button_ [type_ "submit", class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil
 
 
 -- * pages
