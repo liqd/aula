@@ -313,11 +313,11 @@ type TopicApi =
        -- view topic details (tabs "Alle Ideen", ..., "Beauftragte Stimmen")
 
        -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
-  :<|> Topic ::> "ideas"               :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "all"      :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "voting"   :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "accepted" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "winning"  :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas"               :> IdeasQueryApi (GetH (Frame ViewTopic))
+  :<|> Topic ::> "ideas" :> "all"      :> IdeasQueryApi (GetH (Frame ViewTopic))
+  :<|> Topic ::> "ideas" :> "voting"   :> IdeasQueryApi (GetH (Frame ViewTopic))
+  :<|> Topic ::> "ideas" :> "accepted" :> IdeasQueryApi (GetH (Frame ViewTopic))
+  :<|> Topic ::> "ideas" :> "winning"  :> IdeasQueryApi (GetH (Frame ViewTopic))
   :<|> Topic ::> "delegations"         :> GetH (Frame ViewTopic)
 
        -- create, edit, delegate topic
@@ -349,7 +349,7 @@ topicApi space
 type AulaSpace
     =  IdeaApi
        -- browse wild ideas in an idea space
-  :<|> "ideas" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageOverviewOfWildIdeas)
+  :<|> "ideas" :> IdeasQueryApi (GetH (Frame PageOverviewOfWildIdeas))
   :<|> TopicApi
 
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
@@ -359,7 +359,7 @@ aulaSpace space
   :<|> topicApi space
 
 type AulaUser =
-       "ideas"       :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageUserProfileCreatedIdeas)
+       "ideas"       :> IdeasQueryApi (GetH (Frame PageUserProfileCreatedIdeas))
   :<|> "delegations" :> "to"   :> GetH (Frame PageUserProfileUserAsDelegate)
   :<|> "delegations" :> "from" :> GetH (Frame PageUserProfileUserAsDelegatee)
   :<|> "edit"        :> FormHandler EditUserProfile
@@ -394,10 +394,10 @@ type AulaAdmin =
        -- partial freezing
   :<|> "freeze" :> FormHandler PageAdminSettingsFreeze
        -- groups and permissions
-  :<|> "users" :> UsersFilterApi :> UsersSortApi :> GetH (Frame AdminViewUsers)
+  :<|> "users" :> UsersQueryApi (GetH (Frame AdminViewUsers))
   :<|> "user" :> "create" :> FormHandler AdminCreateUser
   :<|> User ::> "reset-pwd" :> FormHandler PageAdminResetPassword
-  :<|> "classes" :> ClassesFilterApi :> GetH (Frame AdminViewClasses)
+  :<|> "classes" :> ClassesQueryApi (GetH (Frame AdminViewClasses))
   :<|> "class" :> "create" :> FormHandler AdminCreateClass
   :<|> User ::> "role" :> "add" :> FormHandler AdminAddRole
   :<|> User ::> Role ::> "delete" :> PostH NeedAdmin

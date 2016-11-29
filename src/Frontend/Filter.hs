@@ -8,31 +8,33 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
 module Frontend.Filter
     ( Filter(Filtered, applyFilter, renderFilter)
 
-    , IdeasFilterApi, IdeasFilterQuery(..), _AllIdeas, _IdeasWithCat, catFilter
-    , IdeasSortApi, SortIdeasBy(..)
+    , IdeasFilterQuery(..), _AllIdeas, _IdeasWithCat, catFilter
+    , SortIdeasBy(..)
     , IdeasQuery(..), mkIdeasQuery, ideasQueryF, ideasQueryS, emptyIdeasQuery
+    , IdeasQueryApi
     , toggleIdeasFilter
 
-    , UsersFilterApi, SearchUsers(..), UsersFilterQuery(..)
+    , SearchUsers(..), UsersFilterQuery(..)
     , _AllUsers, _UsersWithText, searchUsers, unSearchUsers
-    , UsersSortApi, SortUsersBy(..)
-    , UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS
+    , SortUsersBy(..)
+    , UsersQueryApi, UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS
 
     , ClassesFilterQuery(..)
     , SearchClasses(..)
-    , ClassesFilterApi
+    , ClassesQueryApi
     , unSearchClasses, searchClasses, mkClassesQuery
     )
 where
 
 import GHC.TypeLits (Symbol, KnownSymbol, symbolVal)
-import Servant.API (QueryParam, FromHttpApiData, ToHttpApiData, parseUrlPiece, toUrlPiece)
+import Servant.API ((:>), QueryParam, FromHttpApiData, ToHttpApiData, parseUrlPiece, toUrlPiece)
 
 import qualified Data.Ord
 import qualified Data.Text as ST
@@ -70,7 +72,6 @@ instance Filter a => Filter (Maybe a) where
 
 data IdeasFilterQuery = AllIdeas | IdeasWithCat { _catFilter :: Category }
   deriving (Eq, Ord, Show, Read, Generic)
-type IdeasFilterApi = FilterApi Category
 
 instance SOP.Generic IdeasFilterQuery
 
@@ -101,8 +102,6 @@ instance HasUILabel SortIdeasBy where
     uilabel = \case
         SortIdeasBySupport -> "Unterstützung"
         SortIdeasByTime    -> "Datum"
-
-type IdeasSortApi = FilterApi SortIdeasBy
 
 instance SOP.Generic SortIdeasBy
 
@@ -137,6 +136,8 @@ data IdeasQuery = IdeasQuery
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+type IdeasQueryApi a = FilterApi Category :> FilterApi SortIdeasBy :> a
+
 instance SOP.Generic IdeasQuery
 
 makeLenses ''IdeasQuery
@@ -158,8 +159,6 @@ instance Filter IdeasQuery where
 
 data SortUsersBy = SortUsersByTime | SortUsersByName | SortUsersByClass | SortUsersByRole
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
-
-type UsersSortApi = FilterApi SortUsersBy
 
 instance SOP.Generic SortUsersBy
 
@@ -230,8 +229,6 @@ data UsersFilterQuery = AllUsers | UsersWithText { _searchUsers :: SearchUsers }
 
 instance SOP.Generic UsersFilterQuery
 
-type UsersFilterApi = FilterApi SearchUsers
-
 makeLenses ''UsersFilterQuery
 makePrisms ''UsersFilterQuery
 
@@ -246,6 +243,8 @@ data UsersQuery = UsersQuery
     , _usersQueryS :: SortUsersBy
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+type UsersQueryApi a = FilterApi SearchUsers :> FilterApi SortUsersBy :> a
 
 instance SOP.Generic UsersQuery
 
@@ -266,7 +265,7 @@ mkUsersQuery mf ms = UsersQuery (maybe AllUsers UsersWithText mf) (fromMaybe min
 newtype SearchClasses = SearchClasses { _unSearchClasses :: ST }
   deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, ToHttpApiData)
 
-type ClassesFilterApi = FilterApi SearchClasses
+type ClassesQueryApi a = FilterApi SearchClasses :> a
 
 data ClassesFilterQuery = AllClasses | ClassesWithText { _searchClasses :: SearchClasses }
   deriving (Eq, Ord, Show, Read, Generic)

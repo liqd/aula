@@ -19,7 +19,6 @@ module Frontend.Page.Topic
     , ViewTopicTab(..)
     , CreateTopic(..), ctCtx, ctIdeaSpace, ctIdeas, ctRefPhaseEnd
     , EditTopic(..), etCtx, etIdeaSpace, etTopic, etIdeasStats, etIdeas
-    , IdeasFilterApi
     , viewTopic
     , createTopic
     , editTopic
