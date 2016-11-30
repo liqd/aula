@@ -20,6 +20,7 @@ import Control.Monad.Trans.Reader (runReaderT)
 import Data.String.Conversions
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.Directory (getTemporaryDirectory)
+import System.FilePath ((</>))
 import System.IO.Temp (createTempDirectory)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Process (system)
@@ -44,7 +45,7 @@ import Action           as X hiding (setCreatorStatement)
 import Servant          as X
 import Frontend         as X
 import Frontend.Testing as X
-import Frontend.Prelude as X hiding (get, put, logLevel)
+import Frontend.Prelude as X hiding (get, put, logLevel, (</>))
 import Test.Hspec.Missing as X
 
 import Arbitrary (constantSampleTimestamp)
@@ -86,7 +87,7 @@ testConfig = do
         -- 'withSystemTempDirectory' would require significant refactorings of the test suite, we
         -- simply remove all avatar test locations ever created here.  note that this is not good
         -- for concurrent testing.
-        tmpPool <- (<> "aula-test-avatar-static") <$> getTemporaryDirectory
+        tmpPool <- (</> "aula-test-avatar-static") <$> getTemporaryDirectory
         void . system . unwords $ ["rm -rf", tmpPool, "; mkdir -p", tmpPool]
         createTempDirectory tmpPool "d"
     defaultConfig

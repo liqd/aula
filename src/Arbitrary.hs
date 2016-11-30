@@ -590,6 +590,10 @@ instance Arbitrary IdeasFilterQuery where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary (SearchTerm a) where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
 instance Arbitrary SortIdeasBy where
     arbitrary = garbitrary
     shrink    = gshrink

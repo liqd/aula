@@ -8,31 +8,34 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
 module Frontend.Filter
     ( Filter(Filtered, applyFilter, renderFilter)
+    , SearchTerm(..), unSearchTerm
 
-    , IdeasFilterApi, IdeasFilterQuery(..), _AllIdeas, _IdeasWithCat, catFilter
-    , IdeasSortApi, SortIdeasBy(..)
-    , IdeasQuery(..), mkIdeasQuery, ideasQueryF, ideasQueryS, emptyIdeasQuery
+    , IdeasFilterQuery(..), _AllIdeas, _IdeasWithCat, catFilter
+    , SortIdeasBy(..)
+    , IdeasQuery(..), mkIdeasQuery, ideasQueryF, ideasQueryS, ideasQueryT, emptyIdeasQuery
+    , IdeasQueryApi
     , toggleIdeasFilter
 
-    , UsersFilterApi, SearchUsers(..), UsersFilterQuery(..)
+    , SearchUsers(..), UsersFilterQuery(..)
     , _AllUsers, _UsersWithText, searchUsers, unSearchUsers
-    , UsersSortApi, SortUsersBy(..)
-    , UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS
+    , SortUsersBy(..)
+    , UsersQueryApi, UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS
 
     , ClassesFilterQuery(..)
     , SearchClasses(..)
-    , ClassesFilterApi
+    , ClassesQueryApi
     , unSearchClasses, searchClasses, mkClassesQuery
     )
 where
 
 import GHC.TypeLits (Symbol, KnownSymbol, symbolVal)
-import Servant.API (QueryParam, FromHttpApiData, ToHttpApiData, parseUrlPiece, toUrlPiece)
+import Servant.API ((:>), QueryParam, FromHttpApiData, ToHttpApiData, parseUrlPiece, toUrlPiece)
 
 import qualified Data.Ord
 import qualified Data.Text as ST
@@ -40,6 +43,7 @@ import qualified Generics.SOP as SOP
 
 import AulaPrelude
 import Data.UriPath
+import Data.Map (Map)
 import Persistent.Idiom (IdeaStats(..), ideaStatsIdea, ideaSupport)
 import Types
 
@@ -70,7 +74,6 @@ instance Filter a => Filter (Maybe a) where
 
 data IdeasFilterQuery = AllIdeas | IdeasWithCat { _catFilter :: Category }
   deriving (Eq, Ord, Show, Read, Generic)
-type IdeasFilterApi = FilterApi Category
 
 instance SOP.Generic IdeasFilterQuery
 
@@ -102,8 +105,6 @@ instance HasUILabel SortIdeasBy where
         SortIdeasBySupport -> "Unterstützung"
         SortIdeasByTime    -> "Datum"
 
-type IdeasSortApi = FilterApi SortIdeasBy
-
 instance SOP.Generic SortIdeasBy
 
 instance FromHttpApiData SortIdeasBy where
@@ -131,35 +132,85 @@ instance Filter   SortIdeasBy where
 
 type instance FilterName SortIdeasBy = "sortby"
 
+newtype SearchTerm a = SearchTerm { _unSearchTerm :: ST }
+    deriving (Eq, Ord, Show, Read, Generic, Monoid, ToHttpApiData, FromHttpApiData)
+
+makeLenses ''SearchTerm
+
+instance SOP.Generic (SearchTerm a)
+
+class HasSearchTerm a where
+    hasSearchTerm :: a -> SearchTerm b -> Bool
+
+instance (HasSearchTerm a, HasSearchTerm b) => HasSearchTerm (a, b) where
+    hasSearchTerm (x, y) t = hasSearchTerm x t || hasSearchTerm y t
+
+instance (HasSearchTerm a, HasSearchTerm b, HasSearchTerm c) => HasSearchTerm (a, b, c) where
+    hasSearchTerm (x, y, z) = hasSearchTerm (x, (y, z))
+
+instance HasSearchTerm ST.Text where
+    hasSearchTerm s t = (t ^. unSearchTerm) `ST.isInfixOf` s
+
+instance HasSearchTerm Document where
+    hasSearchTerm = hasSearchTerm . unMarkdown
+
+instance HasSearchTerm v => HasSearchTerm (Map k v) where
+    hasSearchTerm m t = anyOf each (`hasSearchTerm` t) m
+
+instance HasSearchTerm Comment where
+    hasSearchTerm c = hasSearchTerm (c ^. commentText, c ^. commentReplies)
+
+instance HasSearchTerm Idea where
+    hasSearchTerm i = hasSearchTerm (i ^. ideaTitle, i ^. ideaDesc)
+
+instance HasSearchTerm IdeaStats where
+    hasSearchTerm i = hasSearchTerm (i ^. ideaStatsIdea)
+
+instance HasSearchTerm a => Filter (SearchTerm a) where
+    type Filtered (SearchTerm a) = a
+    applyFilter  t  | t == nil   = id
+                    | otherwise  = filter prd
+        where
+            ts    = SearchTerm <$> ST.words (t ^. unSearchTerm)
+            prd x = all (hasSearchTerm x) ts
+    renderFilter t  | t == nil   = id
+                    | otherwise  = renderQueryParam t
+
+type instance FilterName (SearchTerm a) = "has"
+
 data IdeasQuery = IdeasQuery
-    { _ideasQueryF :: IdeasFilterQuery
+    { _ideasQueryT :: SearchTerm IdeaStats
+    , _ideasQueryF :: IdeasFilterQuery
     , _ideasQueryS :: SortIdeasBy
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+type IdeasQueryApi a = FilterApi (SearchTerm IdeaStats) :>
+                       FilterApi Category :>
+                       FilterApi SortIdeasBy :> a
 
 instance SOP.Generic IdeasQuery
 
 makeLenses ''IdeasQuery
 
-mkIdeasQuery :: Maybe Category -> Maybe SortIdeasBy -> IdeasQuery
-mkIdeasQuery mc ms = IdeasQuery (maybe AllIdeas IdeasWithCat mc) (fromMaybe minBound ms)
+mkIdeasQuery :: Maybe (SearchTerm IdeaStats) -> Maybe Category -> Maybe SortIdeasBy -> IdeasQuery
+mkIdeasQuery mt mc ms =
+    IdeasQuery (fromMaybe nil mt) (maybe AllIdeas IdeasWithCat mc) (fromMaybe minBound ms)
 
 emptyIdeasQuery :: IdeasQuery
-emptyIdeasQuery = IdeasQuery AllIdeas minBound
+emptyIdeasQuery = IdeasQuery nil AllIdeas minBound
 
 instance Filter IdeasQuery where
     type Filtered IdeasQuery = IdeaStats
 
-    applyFilter  (IdeasQuery f s) = applyFilter  s . applyFilter  f
-    renderFilter (IdeasQuery f s) = renderFilter s . renderFilter f
+    applyFilter  (IdeasQuery t f s) = applyFilter  s . applyFilter  f . applyFilter  t
+    renderFilter (IdeasQuery t f s) = renderFilter s . renderFilter f . renderFilter t
 
 
 -- * users sorting
 
 data SortUsersBy = SortUsersByTime | SortUsersByName | SortUsersByClass | SortUsersByRole
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
-
-type UsersSortApi = FilterApi SortUsersBy
 
 instance SOP.Generic SortUsersBy
 
@@ -212,6 +263,7 @@ makeLenses ''SearchUsers
 
 instance SOP.Generic SearchUsers
 
+-- NOTE: SearchUsers could be replaced by SearchTerm and an instance of HasSearchTerm.
 instance Filter SearchUsers where
     type Filtered SearchUsers = UserView
 
@@ -230,8 +282,6 @@ data UsersFilterQuery = AllUsers | UsersWithText { _searchUsers :: SearchUsers }
 
 instance SOP.Generic UsersFilterQuery
 
-type UsersFilterApi = FilterApi SearchUsers
-
 makeLenses ''UsersFilterQuery
 makePrisms ''UsersFilterQuery
 
@@ -246,6 +296,8 @@ data UsersQuery = UsersQuery
     , _usersQueryS :: SortUsersBy
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+type UsersQueryApi a = FilterApi SearchUsers :> FilterApi SortUsersBy :> a
 
 instance SOP.Generic UsersQuery
 
@@ -266,7 +318,7 @@ mkUsersQuery mf ms = UsersQuery (maybe AllUsers UsersWithText mf) (fromMaybe min
 newtype SearchClasses = SearchClasses { _unSearchClasses :: ST }
   deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, ToHttpApiData)
 
-type ClassesFilterApi = FilterApi SearchClasses
+type ClassesQueryApi a = FilterApi SearchClasses :> a
 
 data ClassesFilterQuery = AllClasses | ClassesWithText { _searchClasses :: SearchClasses }
   deriving (Eq, Ord, Show, Read, Generic)
