@@ -190,3 +190,16 @@ $avatar-size: 118px;
         @include rem(margin-top, 20px);
     }
 }
+
+// better position of search box on SearchResultPages
+div[data-aula-type="ListItemIdeas"] .inline-search-container {
+    position: absolute;
+    @include rem(margin-top, 21px);
+    @include rem(right, 90px);
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        position: relative;
+        margin-top: 1.5%;
+        right: 0;
+    }
+}
