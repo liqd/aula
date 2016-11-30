@@ -93,6 +93,7 @@ module Persistent.Pure
     , setUserEmail
     , setUserPass
     , setUserLogin
+    , renameClass
     , addUserRole
     , remUserRole
     , resetUserPass
@@ -531,6 +532,9 @@ setUserLogin uid login = do
     user <- maybe404 =<< liftAQuery (findUser uid)
     aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
     withUser uid . userLogin .= login
+
+renameClass :: SchoolClass -> ClassName -> AUpdate ()
+renameClass _ _ = pure () -- TODO
 
 addUserRole :: AUID User -> Role -> AUpdate ()
 addUserRole uid role_ = withUser uid . userRoleSet %= Set.insert role_
