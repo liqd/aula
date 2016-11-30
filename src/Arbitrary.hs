@@ -758,10 +758,10 @@ instance Arbitrary UsersQuery where
     arbitrary = garbitrary
     shrink    = gshrink
 
-guestOrStudent :: SchoolClass -> Gen Role
-guestOrStudent clss = elements
-    [ Student clss
-    , ClassGuest clss
+guestOrStudent :: Maybe SchoolClass -> Gen Role
+guestOrStudent mclss = elements
+    [ Student mclss
+    , ClassGuest mclss
     ]
 
 instance Arbitrary InitialPassword where
@@ -814,7 +814,7 @@ instance Arbitrary ResetPasswordFormData where
 
 userForClass :: SchoolClass -> Gen User
 userForClass clss =
-    arb <**> (set userRoleSet . Set.singleton <$> guestOrStudent clss)
+    arb <**> (set userRoleSet . Set.singleton <$> guestOrStudent (Just clss))
 
 instance Arbitrary Durations where
     arbitrary = garbitrary

@@ -14,7 +14,7 @@ import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Lens
     ( (^.), (^..), (^?), (.~), (&)
-    , each, set, re, elemOf, Fold
+    , each, set, re, elemOf, Fold, _Just
     , view, views
     )
 import Control.Monad (forM_, replicateM_, unless, void)
@@ -83,7 +83,7 @@ defaultUniverseSize = UniverseSize
 -- * Generators
 
 genStudent :: [SchoolClass] -> Gen ProtoUserWithAvatar
-genStudent classes = genUser (pure Nothing) $ elements (map Student classes)
+genStudent classes = genUser (pure Nothing) $ elements (Student <$> (Nothing : (Just <$> classes)))
 
 -- | login names are not provided here.  the 'AddUser' transaction will find a fresh login name.
 genUser :: Gen (Maybe UserLogin) -> Gen Role -> Gen ProtoUserWithAvatar
@@ -286,7 +286,7 @@ generate n rnd g =
     gen rnd (sequence [ resize n' g | n' <- take n $ cycle [0,2..20] ])
 
 userIdeaLocations :: Fold User IdeaLocation
-userIdeaLocations = userRoles . _Student . re _ClassSpace . re _IdeaLocationSpace
+userIdeaLocations = userRoles . _Student . _Just . re _ClassSpace . re _IdeaLocationSpace
 
 
 -- * initial DB state

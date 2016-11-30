@@ -572,8 +572,8 @@ instance SOP.Generic RoleSelection
 
 instance HasUILabel RoleSelection where
     uilabel = \case
-        RoleSelStudent     -> uilabel $ Student (SchoolClass 0 nil)
-        RoleSelClassGuest  -> uilabel $ ClassGuest (SchoolClass 0 nil)
+        RoleSelStudent     -> uilabel $ Student Nothing
+        RoleSelClassGuest  -> uilabel $ ClassGuest Nothing
         RoleSelSchoolGuest -> uilabel SchoolGuest
         RoleSelModerator   -> uilabel Moderator
         RoleSelPrincipal   -> uilabel Principal
@@ -677,7 +677,7 @@ instance FormPage AdminEditUser where
                         th_ nil
                     tbody_ . forM_ (user ^.. userRoles) $ \role_ -> tr_ $ do
                         td_ $ role_ ^. uilabeledST . html
-                        td_ $ role_ ^. roleSchoolClass . uilabeledST . html
+                        td_ $ role_ ^. roleSchoolClass . _Just . uilabeledST . html
                         td_ $ postButton_
                                 [ class_ "btn-cta"
                                 , jsReloadOnClickConfirm "Soll diese Rolle wirklich entfernt werden?"
@@ -719,7 +719,7 @@ adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m
 adminCreateUser = formPageHandlerCalcMsg
     (AdminCreateUser <$> query getSchoolClasses)
     (\up -> do
-        forM_ (up ^.. createUserRoleSet . folded . roleSchoolClass) $
+        forM_ (up ^.. createUserRoleSet . folded . roleSchoolClass . _Just) $
             update . AddIdeaSpaceIfNotExists . ClassSpace
         adminCreateUserHelper
             (up ^. createUserLogin)
@@ -776,8 +776,8 @@ adminEditUser uid = formPageHandlerCalcMsg
     (\(AdminEditUser u) _ _ -> unwords ["Nutzer", userFullName u, "wurde geändert."])
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role
-fromRoleSelection RoleSelStudent     = Student
-fromRoleSelection RoleSelClassGuest  = ClassGuest
+fromRoleSelection RoleSelStudent     = Student . Just
+fromRoleSelection RoleSelClassGuest  = ClassGuest . Just
 fromRoleSelection RoleSelSchoolGuest = const SchoolGuest
 fromRoleSelection RoleSelModerator   = const Moderator
 fromRoleSelection RoleSelPrincipal   = const Principal
@@ -896,7 +896,7 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
             Right records -> do
                 let schoolcl = SchoolClass theOnlySchoolYearHack clname
                 update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
-                forM_ records . p . Set.singleton $ Student schoolcl
+                forM_ records . p . Set.singleton . Student $ Just schoolcl
 
     p :: Set Role -> CsvUserRecord -> m ()
     p _     (CsvUserRecord _ _ _ _                          (Just _)) = do
