@@ -42,6 +42,7 @@ import Persistent.Api
     , SetUserLogin(SetUserLogin)
     , AddUserRole(AddUserRole)
     , RemUserRole(RemUserRole)
+    , RenameClass(RenameClass)
     , SetTermsOfUse(SetTermsOfUse)
     )
 import Persistent
@@ -692,9 +693,12 @@ instance FormPage AdminEditUser where
                     br_ []
                     DF.inputSubmit "Änderungen speichern"
 
-instance ToHtml AdminEditClass where
-    toHtml = toHtmlRaw
-    toHtmlRaw p@(AdminEditClass schoolClss users) =
+instance FormPage AdminEditClass where
+    type FormPagePayload AdminEditClass = ClassName
+    formAction (AdminEditClass schoolClss _)   = U.adminEditClass schoolClss
+    redirectOf (AdminEditClass schoolClss _) _ = U.adminEditClass schoolClss
+    makeForm (AdminEditClass schoolClss _) = ClassName <$> classnameF (Just (schoolClss ^. className))
+    formPage v form p@(AdminEditClass schoolClss users) =
         adminFrame p . semanticDiv p $ do
             div_ . h1_ [class_ "admin-main-heading"] $ schoolClss ^. className . html
             div_ $ a_ [class_ "admin-buttons", href_ . U.adminDlPass $ schoolClss]
@@ -708,6 +712,11 @@ instance ToHtml AdminEditClass where
                     td_ . span_ [class_ "img-container"] $ userAvatarImg avatarSizeSmall user
                     td_ $ user ^. userLogin . unUserLogin . html
                     td_ $ a_ [href_ $ U.adminEditUser user] "bearbeiten"
+            form $ do
+                div_ $ do
+                    p_ "Klasse"
+                    DF.inputText "classname" v
+                DF.inputSubmit "Umbenennen"
 
 
 adminViewUsers :: ActionPersist m => Maybe SearchUsers -> Maybe SortUsersBy -> m AdminViewUsers
@@ -783,10 +792,12 @@ fromRoleSelection RoleSelModerator   = const Moderator
 fromRoleSelection RoleSelPrincipal   = const Principal
 fromRoleSelection RoleSelAdmin       = const Admin
 
-adminEditClass :: ActionPersist m => SchoolClass -> m AdminEditClass
-adminEditClass clss =
-    AdminEditClass clss
-    <$> (makeUserView <$$> query (getUsersInClass clss))
+adminEditClass :: ActionPersist m => SchoolClass -> FormPageHandler m AdminEditClass
+adminEditClass clss = formPageHandlerCalcMsg
+    (AdminEditClass clss <$> (makeUserView <$$> query (getUsersInClass clss)))
+    (update . RenameClass clss)
+    (\(AdminEditClass old _) (ClassName new) _ ->
+        ST.unwords ["Klasse", old ^. className, "wurde in", new, "umbenannt."])
 
 data AdminDeleteUserPayload = AdminDeleteUserPayload
   deriving (Eq, Show)
@@ -858,15 +869,16 @@ data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
 
 instance SOP.Generic BatchCreateUsersFormData
 
+classnameF :: (Monad m, Monad n) => Maybe ST -> DF.Form (HtmlT n ()) m ST
+classnameF ms = "classname" .: validate "Klasse" classnameV (DF.text ms)
+
 instance FormPage AdminCreateClass where
     type FormPagePayload AdminCreateClass = BatchCreateUsersFormData
 
     formAction _   = U.adminCreateClass
     redirectOf _ _ = U.adminViewClasses
 
-    makeForm _ = BatchCreateUsersFormData
-        <$> ("classname" .: validate "Klasse" classnameV (DF.string Nothing))
-        <*> ("file"      .: DF.file)
+    makeForm _ = BatchCreateUsersFormData <$> classnameF Nothing <*> ("file" .: DF.file)
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"

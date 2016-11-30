@@ -53,8 +53,7 @@ pagesPlain :: forall b.
     (forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml a, Page a) => Proxy a -> b)
     -> [b]
 pagesPlain f =
-    [ f (Proxy :: Proxy AdminEditClass)
-    , f (Proxy :: Proxy AdminViewClasses)
+    [ f (Proxy :: Proxy AdminViewClasses)
     , f (Proxy :: Proxy AdminViewUsers)
     , f (Proxy :: Proxy PageOverviewOfTopics)
     , f (Proxy :: Proxy PageOverviewOfWildIdeas)
@@ -83,6 +82,7 @@ pagesForm f =
     , f (Proxy :: Proxy AdminCreateClass)
     , f (Proxy :: Proxy AdminDeleteUser)
     , f (Proxy :: Proxy AdminEditUser)
+    , f (Proxy :: Proxy AdminEditClass)
     , f (Proxy :: Proxy PageAdminSettingsQuorum)
     , f (Proxy :: Proxy PageAdminSettingsFreeze)
     , f (Proxy :: Proxy PageHomeWithLoginPrompt)

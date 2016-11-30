@@ -67,7 +67,6 @@ spec = do
         , H (arb :: Gen AdminViewClasses)
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageTermsOfUse)
-        , H (arb :: Gen AdminEditClass)
         , H (arb :: Gen CommentWidget)
         , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen HttpErrorPage)
@@ -83,6 +82,7 @@ spec = do
         , formTest (arb :: Gen AdminEditUser)
         , formTest (arb :: Gen AdminDeleteUser)
 --        , formTest (arb :: Gen AdminCreateUser) -- FIXME: Investigate issue
+        , formTest (arb :: Gen AdminEditClass)
         , formTest (arb :: Gen AdminCreateClass)
         , formTest (arb :: Gen AdminPhaseChange)
         , formTest (arb :: Gen PageAdminResetPassword)
@@ -504,6 +504,12 @@ instance ArbFormPagePayload AdminEditUser where
 instance PayloadToEnv (Maybe UserLogin) where
     payloadToEnvMapping _ _ mlogin = \case
         "login" -> pure $ mlogin ^.. _Just . _UserLogin . to TextInput
+
+instance ArbFormPagePayload AdminEditClass
+
+instance PayloadToEnv ClassName where
+    payloadToEnvMapping _ _ (ClassName classname) = \case
+        "classname" -> pure [TextInput classname]
 
 instance ArbFormPagePayload AdminPhaseChange
 
