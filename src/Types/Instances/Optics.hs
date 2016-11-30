@@ -34,6 +34,7 @@ import Types.Prelude
 
 makePrisms ''AUID
 makePrisms ''Category
+makePrisms ''ClassName
 makePrisms ''PlainDocument
 makePrisms ''DScope
 makePrisms ''Document
@@ -57,6 +58,7 @@ makePrisms ''UserView
 
 makeLenses ''AUID
 makeLenses ''Category
+makeLenses ''ClassName
 makeLenses ''Comment
 makeLenses ''CommentContext
 makeLenses ''CommentKey

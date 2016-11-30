@@ -470,6 +470,9 @@ data IdeaSpace =
   | ClassSpace { _ideaSpaceSchoolClass :: SchoolClass }
   deriving (Eq, Show, Read, Generic)
 
+newtype ClassName = ClassName { _unClassName :: ST }
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
+
 -- | "Klasse".  (The school year is necessary as the class name is used for a fresh set of students
 -- every school year.)
 data SchoolClass = SchoolClass

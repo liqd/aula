@@ -32,6 +32,7 @@ import Types.Core
 
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category
+deriveSafeCopy 0 'base ''ClassName
 deriveSafeCopy 0 'base ''Comment
 deriveSafeCopy 0 'base ''CommentContent
 deriveSafeCopy 0 'base ''CommentKey
