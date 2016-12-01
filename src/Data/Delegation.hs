@@ -21,6 +21,7 @@ module Data.Delegation
     , scopeDelegateesSafe
     , votingPower
     , findDelegationsByScope
+    , renameDelegations
     )
 where
 
@@ -90,6 +91,10 @@ data Delegations = Delegations {
     , _coDelegations :: CoDelegationMap
     }
   deriving (Eq, Show, Read)
+
+makeLenses ''DelegationMap
+makeLenses ''CoDelegationMap
+makeLenses ''Delegations
 
 
 -- * delegation
@@ -193,6 +198,16 @@ findDelegationsByScope scope (Delegations _dmap (CoDelegationMap cdm)) =
     [ (delegate, scope, fromMaybe [] $ Set.toList <$> DMap.lookup delegate scope cdm)
     | delegate   <- Map.keys cdm
     ]
+
+-- The renaming MUST be injective.
+renameMapKeys :: Ord k' => (k -> k') -> Map k v -> Map k' v
+renameMapKeys f = Map.fromList . map (_1 %~ f) . Map.toList
+
+-- The renaming MUST be injective.
+renameDelegations :: (S -> S) -> Delegations -> Delegations
+renameDelegations f dls =
+    dls & delegations . delegationMap . each %~ renameMapKeys f
+        & coDelegations . coDelegationMap . each %~ renameMapKeys f
 
 
 -- * safe copy

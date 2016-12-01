@@ -93,6 +93,8 @@ module Persistent.Pure
     , setUserEmail
     , setUserPass
     , setUserLogin
+    , checkClassNameIsAvailable
+    , classNameIsAvailable
     , renameClass
     , addUserRole
     , remUserRole
@@ -163,7 +165,7 @@ where
 import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT)
 import Control.Monad.Reader (MonadReader, runReader, asks)
-import Control.Monad.State (MonadState, gets, put)
+import Control.Monad.State (MonadState, gets, put, modify)
 import Control.Monad (foldM, unless, when, replicateM, forM, forM_, filterM)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
@@ -175,6 +177,7 @@ import Data.List (nub)
 import Data.Maybe
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
+import Data.Set.Lens
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Tree
 import Data.Typeable (Typeable, typeRep)
@@ -336,6 +339,7 @@ data PersistExcept
         -- FIXME: rename to PersistExceptNotFound
     | PersistErrorNotImplemented { persistErrorMessage :: String }
     | UserLoginInUse UserLogin
+    | ClassNameInUse ClassName
     deriving (Eq, Show)
 
 makePrisms ''PersistExcept
@@ -349,6 +353,7 @@ instance LogMessage PersistExcept where
         PersistError404 msg            -> cs $ "404 " <> msg
         PersistErrorNotImplemented msg -> cs $ "Not implemented: " <> msg
         UserLoginInUse ul              -> cs $ "User login in use: " <> ul ^. unUserLogin
+        ClassNameInUse cl              -> cs $ "Class name in use: " <> cl ^. unClassName
 
 instance ThrowError500 PersistExcept where
     error500 = _PersistError500
@@ -361,6 +366,8 @@ runPersistExcept (PersistError404 msg)            = err404 { errBody = cs msg }
 runPersistExcept (PersistErrorNotImplemented msg) = err500 { errBody = cs msg }
 runPersistExcept (UserLoginInUse li) =
     err403 { errBody = "user login in use: " <> cs (show li) }
+runPersistExcept (ClassNameInUse cl) =
+    err403 { errBody = "class name in use: " <> cs (show cl) }
 
 
 -- * state interface
@@ -533,8 +540,38 @@ setUserLogin uid login = do
     aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
     withUser uid . userLogin .= login
 
+type Rename a = (ClassName -> ClassName) -> a -> a
+
+renameSchoolClass :: Rename SchoolClass
+renameSchoolClass f cl = cl & className . from _ClassName %~ f
+
+renameAulaData :: Rename AulaData
+renameAulaData f aulaData =
+    aulaData
+        & dbSpaceSet . setmapped . ideaSpaceSchoolClass %~ renameSchoolClass f
+        & dbIdeaMap  . each . ideaLocation . ideaLocationSpace . ideaSpaceSchoolClass %~ renameSchoolClass f
+        & dbUserMap  . each . userRoleSet . setmapped . roleSchoolClass . _Just %~ renameSchoolClass f
+        & dbTopicMap . each . topicIdeaSpace . ideaSpaceSchoolClass %~ renameSchoolClass f
+        & dbDelegations %~ renameDelegations (renameDScope f)
+
+renameDScope :: Rename DScope
+renameDScope f ds = ds & dScopeIdeaSpace . ideaSpaceSchoolClass %~ renameSchoolClass f
+
+classNameIsAvailable :: ClassName -> Query Bool
+classNameIsAvailable (ClassName cl') =
+    asks (not . elemOf (dbSpaceSet . folded . ideaSpaceSchoolClass . className) cl')
+
+checkClassNameIsAvailable :: ClassName -> AUpdate ()
+checkClassNameIsAvailable cl = do
+    isAvailable <- liftAQuery $ classNameIsAvailable cl
+    unless isAvailable . throwError $ ClassNameInUse cl
+
 renameClass :: SchoolClass -> ClassName -> AUpdate ()
-renameClass _ _ = pure () -- TODO
+renameClass (SchoolClass _ old) new
+    | ClassName old == new = pure ()
+    | otherwise = do
+        checkClassNameIsAvailable new
+        modify . renameAulaData $ \x -> if x == ClassName old then new else x
 
 addUserRole :: AUID User -> Role -> AUpdate ()
 addUserRole uid role_ = withUser uid . userRoleSet %= Set.insert role_
