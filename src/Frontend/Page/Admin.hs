@@ -48,7 +48,7 @@ import Persistent.Api
 import Persistent
     ( dbDurations, dbQuorums, dbFreeze, loginIsAvailable, getUserViews, getSchoolClasses
     , findActiveUser, getUsersInClass, findActiveUser, getSpaces, getUsersInClass
-    , termsOfUse
+    , termsOfUse, classNameIsAvailable
     )
 import Frontend.Prelude
 import Frontend.Validation hiding (tab, spaces)
@@ -695,9 +695,10 @@ instance FormPage AdminEditUser where
 
 instance FormPage AdminEditClass where
     type FormPagePayload AdminEditClass = ClassName
-    formAction (AdminEditClass schoolClss _)   = U.adminEditClass schoolClss
-    redirectOf (AdminEditClass schoolClss _) _ = U.adminEditClass schoolClss
-    makeForm (AdminEditClass schoolClss _) = ClassName <$> classnameF (Just (schoolClss ^. className))
+    type FormPageResult  AdminEditClass = ClassName
+    formAction (AdminEditClass schoolClss _)     = U.adminEditClass schoolClss
+    redirectOf (AdminEditClass schoolClss _) new = U.adminEditClass (schoolClss & className .~ (new ^. unClassName))
+    makeForm (AdminEditClass schoolClss _) = classnameF (Just (ClassName $ schoolClss ^. className))
     formPage v form p@(AdminEditClass schoolClss users) =
         adminFrame p . semanticDiv p $ do
             div_ . h1_ [class_ "admin-main-heading"] $ schoolClss ^. className . html
@@ -795,7 +796,7 @@ fromRoleSelection RoleSelAdmin       = const Admin
 adminEditClass :: ActionPersist m => SchoolClass -> FormPageHandler m AdminEditClass
 adminEditClass clss = formPageHandlerCalcMsg
     (AdminEditClass clss <$> (makeUserView <$$> query (getUsersInClass clss)))
-    (update . RenameClass clss)
+    (\new -> update (RenameClass clss new) $> new)
     (\(AdminEditClass old _) (ClassName new) _ ->
         ST.unwords ["Klasse", old ^. className, "wurde in", new, "umbenannt."])
 
@@ -869,8 +870,14 @@ data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
 
 instance SOP.Generic BatchCreateUsersFormData
 
-classnameF :: (Monad m, Monad n) => Maybe ST -> DF.Form (HtmlT n ()) m ST
-classnameF ms = "classname" .: validate "Klasse" classnameV (DF.text ms)
+classnameF :: (ActionPersist m, Monad n) => Maybe ClassName -> DF.Form (HtmlT n ()) m ClassName
+classnameF mcl =
+    "classname" .: DF.validateM chk (ClassName <$> validate "Klasse" classnameV
+                                                            (DF.text (mcl ^? _Just . unClassName)))
+  where
+    chk cl = do
+        isAvailable <- query $ classNameIsAvailable cl
+        pure $ if isAvailable then DF.Success cl else DF.Error "Klassenname ist bereits vergeben"
 
 instance FormPage AdminCreateClass where
     type FormPagePayload AdminCreateClass = BatchCreateUsersFormData
@@ -878,7 +885,8 @@ instance FormPage AdminCreateClass where
     formAction _   = U.adminCreateClass
     redirectOf _ _ = U.adminViewClasses
 
-    makeForm _ = BatchCreateUsersFormData <$> classnameF Nothing <*> ("file" .: DF.file)
+    makeForm _ = BatchCreateUsersFormData <$> (view unClassName <$> classnameF Nothing)
+                                          <*> ("file" .: DF.file)
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"
