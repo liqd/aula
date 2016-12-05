@@ -545,6 +545,9 @@ instance FormPage p => ToHtml (FormPageRep p) where
 data FormPageHandler m p = FormPageHandler
     { _formRequireCsrf   :: Bool
     , _formGetPage       :: m p
+    -- ^ FIXME:
+    -- It would be nice to constrain this action to query (no update).
+    -- Initially this can be done by constraining functions such as formPageHandlerX.
     , _formProcessor     :: FormPagePayload p -> m (FormPageResult p)
     , _formStatusMessage :: p -> FormPagePayload p -> FormPageResult p -> m (Maybe StatusMessage)
     }
