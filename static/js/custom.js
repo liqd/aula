@@ -186,11 +186,11 @@ function simplePost(event, config) {
     var successHandler = function() {
         if (config && config.hash) {
             document.location.hash = config.hash;
-        }
-        if (config && config.href) {
+        } else if (config && config.href) {
             document.location.href = config.href;
+        } else {
+            document.location.reload(true);
         }
-        document.location.reload(true);
     };
 
     if (!config.askConfirm || confirm(config.askConfirm)) {
