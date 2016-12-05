@@ -404,6 +404,7 @@ type AulaAdmin =
   :<|> User ::> "edit" :> FormHandler AdminEditUser
   :<|> SchoolClass ::> "edit" :> FormHandler AdminEditClass
   :<|> User ::> "delete" :> FormHandler AdminDeleteUser
+  :<|> SchoolClass ::> "delete" :> PostH NeedAdmin
        -- event log
   :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
   :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> GetCSV InitialPasswordsCsv
@@ -425,10 +426,11 @@ aulaAdmin =
   :<|> runHandler . Page.adminViewClasses
   :<|> form Page.adminCreateClass
   :<|> form . Page.adminAddRole
-  :<|> postAdminRemRole
+  :<|> runAdminHandler <..> Page.adminRemRole
   :<|> form . Page.adminEditUser
   :<|> form . Page.adminEditClass
   :<|> form . Page.adminDeleteUser
+  :<|> runAdminHandler . Page.adminDestroyClass
   :<|> form Page.adminEventsProtocol
   :<|> runGetHandler . Page.adminInitialPasswordsCsv
   :<|> runGetHandler . adminEventLogCsv
@@ -438,4 +440,4 @@ aulaAdmin =
   :<|> form Page.adminTermsOfUse
   where
     postWithTopic a tid = runPostHandler (NeedCap . fst <$> Action.topicCapCtx tid) (a tid)
-    postAdminRemRole user = runPostHandler (pure NeedAdmin) . Page.adminRemRole user
+    runAdminHandler = runPostHandler (pure NeedAdmin)

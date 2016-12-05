@@ -122,6 +122,7 @@ module Frontend.Path
     , adminCreateUser
     , adminEditClass
     , adminDeleteUser
+    , adminDeleteClass
     , adminDlPass
     , adminTopicNextPhase
     , adminTopicVotingPrevPhase
@@ -452,6 +453,7 @@ data AdminMode (r :: AllowedMethod) =
   | AdminViewUsers (Maybe UsersQuery)
   | AdminCreateClass
   | AdminEditClass SchoolClass
+  | AdminDeleteClass SchoolClass
   | AdminViewClasses (Maybe ClassesFilterQuery)
   | AdminEvent
   | AdminDlPass SchoolClass
@@ -476,6 +478,9 @@ adminEditClass = Admin . AdminEditClass
 
 adminDeleteUser :: User -> Main 'AllowGetPost
 adminDeleteUser = Admin . AdminDeleteUser . view _Id
+
+adminDeleteClass :: SchoolClass -> Main 'AllowPost
+adminDeleteClass = Admin . AdminDeleteClass
 
 adminDlPass :: SchoolClass -> Main 'AllowGetPost
 adminDlPass = Admin . AdminDlPass
@@ -523,6 +528,7 @@ adminMode (AdminDeleteUser uid) path = path </> "user" </> uriPart uid </> "dele
 adminMode (AdminViewClasses mq) path = renderFilter mq $ path </> "classes"
 adminMode AdminCreateClass      path = path </> "class" </> "create"
 adminMode (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
+adminMode (AdminDeleteClass clss) path = path </> "class" </> uriPart clss </> "delete" -- TODO: align
 adminMode AdminEvent            path = path </> "event"
 adminMode (AdminDlPass clss)    path = path </> "downloads" </> "passwords" </> uriPart clss
 adminMode (AdminDlEvents mspc)  path = path </> "downloads" </> "events"

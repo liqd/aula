@@ -365,12 +365,16 @@ instance Arbitrary AdminViewClasses where
 instance Arbitrary AdminCreateClass where
     arbitrary = pure AdminCreateClass
 
+instance Arbitrary ClassScopeStats where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
 instance Arbitrary AdminEditClass where
     arbitrary = do
         clss <- arb
         AdminEditClass clss
-            <$> (makeUserView <$$> listOf (userForClass clss))
-    shrink (AdminEditClass x y) = AdminEditClass <$> shr x <*> shr y
+            <$> (makeUserView <$$> listOf (userForClass clss)) <*> arb
+    shrink (AdminEditClass x y z) = AdminEditClass <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary PageAdminSettingsEventsProtocol where
     arbitrary = PageAdminSettingsEventsProtocol <$> arb

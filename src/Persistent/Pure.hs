@@ -66,6 +66,7 @@ module Persistent.Pure
     , findIdeasByTopicId
     , findIdeasByTopic
     , findIdeasByUserId
+    , findIdeasBySpace
     , findWildIdeasBySpace
     , findComment
     , findComment'
@@ -98,6 +99,7 @@ module Persistent.Pure
     , checkClassNameIsAvailable
     , classNameIsAvailable
     , renameClass
+    , destroyClass
     , addUserRole
     , remUserRole
     , resetUserPass
@@ -599,6 +601,20 @@ renameClass (SchoolClass _ old) new
         checkClassNameIsAvailable new
         modify . renameInAulaData $ \x -> if x == old then new else x
 
+deleteInMapBy :: Eq b => Fold a b -> b -> AMap a -> AMap a
+deleteInMapBy selector b = Map.filter (\x -> x ^? selector /= Just b)
+
+destroyClass :: SchoolClass -> AUpdate ()
+destroyClass clss = do
+    dbSpaceSet . at (ClassSpace clss) .= Nothing
+    dbIdeaMap  %= deleteInMapBy (ideaLocation . ideaLocationSpace . ideaSpaceSchoolClass) clss
+    dbTopicMap %= deleteInMapBy (topicIdeaSpace . ideaSpaceSchoolClass)                   clss
+    dbUserMap . each . userRoleSet . setmapped . roleSchoolClass %= deleteRole
+    dbDelegations %= removeDelegationsByScope (DScopeIdeaSpace (ClassSpace clss))
+  where
+    deleteRole x | x == Just clss = Nothing
+                 | otherwise      = x
+
 addUserRole :: AUID User -> Role -> AUpdate ()
 addUserRole uid role_ = withUser uid . userRoleSet %= Set.insert role_
 
@@ -867,6 +883,12 @@ findIdeasByTopic = fmap noDeletedIdeas . findAllInBy dbIdeas ideaLocation . topi
 
 findWildIdeasBySpace :: IdeaSpace -> Query [Idea]
 findWildIdeasBySpace = fmap noDeletedIdeas . findAllInBy dbIdeas ideaLocation . IdeaLocationSpace
+
+-- This includes:
+-- * the wild ideas
+-- * the ideas in topic
+findIdeasBySpace :: IdeaSpace -> Query [Idea]
+findIdeasBySpace = fmap noDeletedIdeas . findAllInBy dbIdeas (ideaLocation . ideaLocationSpace)
 
 findComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> MQuery Comment
 findComment' iid parents = preview . dbComment' iid parents
