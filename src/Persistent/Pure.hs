@@ -227,6 +227,12 @@ type AulaGetter a = Getter AulaData a
 type AulaSetter a = Setter' AulaData a
 type AulaTraversal a = Traversal' AulaData a
 
+noDeletedIdeas :: [Idea] -> [Idea]
+noDeletedIdeas  = filter (not . view ideaDeleted)
+
+noDeletedTopics :: [Topic] -> [Topic]
+noDeletedTopics = filter (not . view topicDeleted)
+
 dbSpaces :: AulaGetter [IdeaSpace]
 dbSpaces = dbSpaceSet . to Set.elems
 
@@ -237,7 +243,7 @@ dbUsers :: AulaGetter [User]
 dbUsers = dbUserMap . to Map.elems
 
 dbTopics :: AulaGetter [Topic]
-dbTopics = dbTopicMap . to Map.elems . to (filter (not . _topicDeleted))
+dbTopics = dbTopicMap . to Map.elems . to noDeletedTopics
 
 dbSnapshot :: AulaGetter AulaData
 dbSnapshot = to id
@@ -847,7 +853,7 @@ findTopicBy :: Eq a => Fold Topic a -> a -> MQuery Topic
 findTopicBy = findInBy dbTopics
 
 findTopicsBySpace :: IdeaSpace -> Query [Topic]
-findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
+findTopicsBySpace = fmap noDeletedTopics . findAllInBy dbTopics topicIdeaSpace
 
 findIdeasByTopicId :: AUID Topic -> Query [Idea]
 findIdeasByTopicId tid = do
@@ -857,10 +863,10 @@ findIdeasByTopicId tid = do
         Just t  -> findIdeasByTopic t
 
 findIdeasByTopic :: Topic -> Query [Idea]
-findIdeasByTopic = fmap (filter (not . view ideaDeleted)) . findAllInBy dbIdeas ideaLocation . topicIdeaLocation
+findIdeasByTopic = fmap noDeletedIdeas . findAllInBy dbIdeas ideaLocation . topicIdeaLocation
 
 findWildIdeasBySpace :: IdeaSpace -> Query [Idea]
-findWildIdeasBySpace space = filter (not . view ideaDeleted) <$> findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
+findWildIdeasBySpace = fmap noDeletedIdeas . findAllInBy dbIdeas ideaLocation . IdeaLocationSpace
 
 findComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> MQuery Comment
 findComment' iid parents = preview . dbComment' iid parents
