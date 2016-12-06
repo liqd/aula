@@ -48,7 +48,7 @@ import Persistent.Api
 import Persistent
     ( dbDurations, dbQuorums, dbFreeze, loginIsAvailable, getUserViews, getSchoolClasses
     , findActiveUser, getUsersInClass, findActiveUser, getSpaces, getUsersInClass
-    , termsOfUse, classNameIsAvailable
+    , termsOfUse
     )
 import Frontend.Prelude
 import Frontend.Validation hiding (tab, spaces)
@@ -868,15 +868,6 @@ data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
   deriving (Eq, Show, Generic)
 
 instance SOP.Generic BatchCreateUsersFormData
-
-classnameF :: (ActionPersist m, Monad n) => Maybe ClassName -> DF.Form (HtmlT n ()) m ClassName
-classnameF mcl =
-    "classname" .: DF.validateM chk (ClassName <$> validate "Klasse" classnameV
-                                                            (DF.text (mcl ^? _Just . unClassName)))
-  where
-    chk cl = do
-        isAvailable <- query $ classNameIsAvailable cl
-        pure $ if isAvailable then DF.Success cl else DF.Error "Klassenname ist bereits vergeben"
 
 instance FormPage AdminCreateClass where
     type FormPagePayload AdminCreateClass = BatchCreateUsersFormData
