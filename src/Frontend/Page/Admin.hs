@@ -702,11 +702,10 @@ instance FormPage AdminEditClass where
     formPage v form p@(AdminEditClass schoolClss users) =
         adminFrame p . semanticDiv p $ do
             div_ . h1_ [class_ "admin-main-heading"] $ schoolClss ^. className . html
-            form $ do
-                div_ $ do
-                    p_ "Klasse"
+            div_ [class_ "container-info"] $ do
+                form $ do
                     DF.inputText "classname" v
-                DF.inputSubmit "Umbenennen"
+                DF.inputSubmit "Klasse umbenennen"
             div_ $ a_ [class_ "admin-buttons", href_ . U.adminDlPass $ schoolClss]
                 "Passwort-Liste"
             table_ [class_ "admin-table"] $ do
