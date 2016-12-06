@@ -159,6 +159,8 @@ module Persistent.Pure
     , ideaMetas
     , aulaMetas
     , aulaUserLogins
+
+    , renameInAulaData
     )
 where
 
@@ -540,22 +542,36 @@ setUserLogin uid login = do
     aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
     withUser uid . userLogin .= login
 
-type Rename a = (ClassName -> ClassName) -> a -> a
+type RenameIn a = (ClassName -> ClassName) -> a -> a
 
-renameSchoolClass :: Rename SchoolClass
-renameSchoolClass f cl = cl & className . from _ClassName %~ f
+renameInSchoolClass :: RenameIn SchoolClass
+renameInSchoolClass f cl = cl & className . from _ClassName %~ f
 
-renameAulaData :: Rename AulaData
-renameAulaData f aulaData =
+renameInAulaData :: RenameIn AulaData
+renameInAulaData f aulaData =
     aulaData
-        & dbSpaceSet . setmapped . ideaSpaceSchoolClass %~ renameSchoolClass f
-        & dbIdeaMap  . each . ideaLocation . ideaLocationSpace . ideaSpaceSchoolClass %~ renameSchoolClass f
-        & dbUserMap  . each . userRoleSet . setmapped . roleSchoolClass . _Just %~ renameSchoolClass f
-        & dbTopicMap . each . topicIdeaSpace . ideaSpaceSchoolClass %~ renameSchoolClass f
-        & dbDelegations %~ renameDelegations (renameDScope f)
+        & dbSpaceSet . setmapped . ideaSpaceSchoolClass %~ renameInSchoolClass f
+        & dbIdeaMap  . each %~ renameInIdea f
+        & dbUserMap  . each . userRoleSet . setmapped . roleSchoolClass . _Just %~ renameInSchoolClass f
+        & dbTopicMap . each . topicIdeaSpace . ideaSpaceSchoolClass %~ renameInSchoolClass f
+        & dbDelegations %~ renameDelegations (renameInDScope f)
 
-renameDScope :: Rename DScope
-renameDScope f ds = ds & dScopeIdeaSpace . ideaSpaceSchoolClass %~ renameSchoolClass f
+renameInCommentKey :: RenameIn CommentKey
+renameInCommentKey f = ckIdeaLocation . ideaLocationSpace . ideaSpaceSchoolClass %~ renameInSchoolClass f
+
+renameInComment :: RenameIn Comment
+renameInComment f comment = comment
+    & commentMeta    . metaKey %~ renameInCommentKey f
+    & commentVotes   . each . commentVoteMeta . metaKey . cvCommentKey %~ renameInCommentKey f
+    & commentReplies . each %~ renameInComment f
+
+renameInIdea :: RenameIn Idea
+renameInIdea f idea = idea
+    & ideaLocation . ideaLocationSpace . ideaSpaceSchoolClass %~ renameInSchoolClass f
+    & ideaComments . each %~ renameInComment f
+
+renameInDScope :: RenameIn DScope
+renameInDScope f = dScopeIdeaSpace . ideaSpaceSchoolClass %~ renameInSchoolClass f
 
 classNameIsAvailable :: ClassName -> Query Bool
 classNameIsAvailable (ClassName cl') =
@@ -571,7 +587,7 @@ renameClass (SchoolClass _ old) new
     | ClassName old == new = pure ()
     | otherwise = do
         checkClassNameIsAvailable new
-        modify . renameAulaData $ \x -> if x == ClassName old then new else x
+        modify . renameInAulaData $ \x -> if x == ClassName old then new else x
 
 addUserRole :: AUID User -> Role -> AUpdate ()
 addUserRole uid role_ = withUser uid . userRoleSet %= Set.insert role_
