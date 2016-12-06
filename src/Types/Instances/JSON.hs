@@ -1,4 +1,6 @@
-{-# LANGUAGE OverloadedStrings           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE StandaloneDeriving         #-}
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
@@ -18,6 +20,8 @@ import Types.Core
 import Types.Instances.Optics
 import Frontend.Constant
 
+deriving instance Aeson.ToJSON   ClassName
+deriving instance Aeson.FromJSON ClassName
 
 instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON CommentKey where toJSON = Aeson.gtoJson

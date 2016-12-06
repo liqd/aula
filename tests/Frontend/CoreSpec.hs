@@ -268,7 +268,7 @@ instance PayloadToEnv Role where
         "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (r ^. roleSelection)]
         "class" -> pure $ TextInput . selectValue "class" v classes <$> r ^.. roleSchoolClass . _Just
       where
-        classes = (id &&& cs . view className) <$> schoolClasses
+        classes = (id &&& cs . view (className . unClassName)) <$> schoolClasses
 
 instance PayloadToEnv CommentContent where
     payloadToEnvMapping _ _ (CommentContent (unMarkdown -> comment)) = \case
@@ -605,7 +605,7 @@ instance PayloadToEnv CreateUserPayload where
 -}
 
 instance ArbFormPagePayload AdminCreateClass where
-    arbFormPagePayload _ = BatchCreateUsersFormData <$> (_className <$> (arb :: Gen SchoolClass)) <*> arb
+    arbFormPagePayload _ = BatchCreateUsersFormData <$> (_unClassName . _className <$> (arb :: Gen SchoolClass)) <*> arb
 
 instance PayloadToEnv BatchCreateUsersFormData where
     payloadToEnvMapping _ _ (BatchCreateUsersFormData classname mfilepath) = \case

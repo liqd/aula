@@ -19,7 +19,7 @@ import Persistent.Pure
 import Types
 
 renameInData :: Data a => (ClassName -> ClassName) -> a -> a
-renameInData f = template . className . from _ClassName %~ f
+renameInData = over $ template . className
 
 spec :: Spec
 spec = do

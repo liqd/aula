@@ -105,7 +105,7 @@ import Frontend.Filter
 import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
-import Frontend.Prelude (view, set, (^.), over, (.~), (%~), (&))
+import Frontend.Prelude (set, (^.), over, (.~), (%~), (&))
 import Persistent
 import Types
 
@@ -690,8 +690,7 @@ instance Arbitrary SchoolClass where
     shrink x  = dropWhileX x schoolClasses
 
 schoolClasses :: [SchoolClass]
-schoolClasses = SchoolClass <$> [theOnlySchoolYearHack]
-                            <*> (view unClassName <$> classNames)
+schoolClasses = SchoolClass <$> [theOnlySchoolYearHack] <*> classNames
 
 instance Arbitrary ProtoTopic where
     arbitrary =

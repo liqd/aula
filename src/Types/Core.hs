@@ -250,7 +250,7 @@ parseIdeaSpaceCode' = parseIdeaSpaceCode . ST.splitOn "-"
 
 parseSchoolClassCode :: (IsString err, Monoid err) => [ST] -> Either err SchoolClass
 parseSchoolClassCode = \case
-    (year : name) -> (`SchoolClass` ST.intercalate "-" name) <$> readYear year
+    (year : name) -> (`SchoolClass` ClassName (ST.intercalate "-" name)) <$> readYear year
                       -- (splitOn-then-intercalate is not pretty, but there is nothing better
                       -- fitting in the ST module for what we actually need here, and we don't want
                       -- to spend time writing more aux functions, again.)
@@ -474,14 +474,13 @@ data IdeaSpace =
   deriving (Eq, Show, Read, Generic, Typeable, Data)
 
 newtype ClassName = ClassName { _unClassName :: ST }
-  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, Typeable, Data, FromHttpApiData)
 
 -- | "Klasse".  (The school year is necessary as the class name is used for a fresh set of students
 -- every school year.)
 data SchoolClass = SchoolClass
-    { _classSchoolYear :: Int -- ^ e.g. 2015
-    , _className       :: ST  -- ^ e.g. "7a"
--- TODO ^ ClassName ?
+    { _classSchoolYear :: Int       -- ^ e.g. 2015
+    , _className       :: ClassName -- ^ e.g. "7a"
     }
   deriving (Eq, Ord, Show, Read, Generic, Typeable, Data)
 
@@ -495,7 +494,7 @@ ideaSpaceCode SchoolSpace    = "school"
 ideaSpaceCode (ClassSpace c) = schoolClassCode c
 
 schoolClassCode :: SchoolClass -> String
-schoolClassCode c = show (_classSchoolYear c) <> "-" <> cs (_className c)
+schoolClassCode c = show (_classSchoolYear c) <> "-" <> cs (_unClassName (_className c))
 
 
 -- | A 'Topic' is created inside an 'IdeaSpace'.  It is used as a container for a "wild idea" that
@@ -792,7 +791,7 @@ instance Ord IdeaSpace where
       where
         sortableName :: IdeaSpace -> Maybe [Either String Int]
         sortableName SchoolSpace     = Nothing
-        sortableName (ClassSpace cl) = Just . structured . cs . _className $ cl
+        sortableName (ClassSpace cl) = Just . structured . cs . _unClassName . _className $ cl
 
         structured :: String -> [Either String Int]
         structured = nonDigits
@@ -820,12 +819,14 @@ instance ToHttpApiData IdeaSpace where
 instance FromHttpApiData IdeaSpace where
     parseUrlPiece = parseIdeaSpaceCode'
 
+instance HasUILabel ClassName where
+    uilabel = fromString . cs . _unClassName
 
 -- | for the first school year, we can ignore the year.  (after that, we have different options.
 -- one would be to only show the year if it is not the current one, or always show it, or either
 -- show "current" if applicable or the actual year if it lies in the past.)
 instance HasUILabel SchoolClass where
-    uilabel = fromString . cs . _className
+    uilabel = uilabel . _className
 
 instance HasUriPart SchoolClass where
     uriPart = fromString . schoolClassCode
