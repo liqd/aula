@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE DataKinds                   #-}
 {-# LANGUAGE DefaultSignatures           #-}
+{-# LANGUAGE DeriveDataTypeable          #-}
 {-# LANGUAGE DeriveGeneric               #-}
 {-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE FlexibleInstances           #-}
@@ -25,6 +26,8 @@ where
 import Control.Lens hiding ((<.>))
 import Data.Set.Lens (setOf)
 import Crypto.Scrypt
+import Data.Data (Data)
+import Data.Typeable (Typeable)
 import Data.Set as Set (Set, intersection, member)
 import Data.Map as Map (filter, fromList, size)
 import Data.Maybe (mapMaybe)
@@ -111,7 +114,7 @@ aMapFromList = Map.fromList . map (\x -> (x ^. _Id, x))
 -- * user
 
 newtype PasswordToken = PasswordToken { unPasswordToken :: ST }
-  deriving (Eq, Generic, Ord, Read, Show)
+  deriving (Eq, Generic, Ord, Read, Show, Typeable, Data)
 
 instance HasUriPart PasswordToken where
     uriPart = fromString . cs . unPasswordToken
@@ -384,20 +387,20 @@ data Durations = Durations
     { _elaborationPhase :: DurationDays
     , _votingPhase      :: DurationDays
     }
-  deriving (Eq, Show, Read, Generic)
+  deriving (Eq, Show, Read, Generic, Typeable, Data)
 
 data Quorums = Quorums
     { _schoolQuorumPercentage :: Int
     , _classQuorumPercentage  :: Int -- (there is only one quorum for all classes, see gh#318)
     }
-  deriving (Eq, Show, Read, Generic)
+  deriving (Eq, Show, Read, Generic, Typeable, Data)
 
 data Settings = Settings
     { _durations :: Durations
     , _quorums   :: Quorums
     , _freeze    :: Freeze
     }
-  deriving (Eq, Show, Read, Generic)
+  deriving (Eq, Show, Read, Generic, Typeable, Data)
 
 defaultSettings :: Settings
 defaultSettings = Settings

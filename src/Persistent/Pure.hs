@@ -1,4 +1,6 @@
 {-# LANGUAGE ConstraintKinds             #-}
+{-# LANGUAGE DeriveDataTypeable          #-}
+{-# LANGUAGE DeriveGeneric               #-}
 {-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GADTs                       #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
@@ -172,6 +174,7 @@ import Control.Monad (foldM, unless, when, replicateM, forM, forM_, filterM)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid (UpdateEvent, EventState, EventResult)
+import Data.Data (Data)
 import Data.Foldable (find, for_)
 import Data.Functor
 import Data.Functor.Infix ((<$$>))
@@ -183,6 +186,7 @@ import Data.Set.Lens
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Tree
 import Data.Typeable (Typeable, typeRep)
+import GHC.Generics (Generic)
 import Servant
 import Servant.Missing (ThrowError500(..))
 
@@ -190,6 +194,7 @@ import qualified Data.Acid as Acid
 import qualified Data.Map  as Map
 import qualified Data.Set  as Set
 import qualified Data.Text as ST
+import qualified Generics.SOP as SOP
 
 import Types
 import LifeCycle (freezePhase)
@@ -211,7 +216,9 @@ data AulaData = AulaData
     , _dbSettings            :: Settings
     , _dbLastId              :: Integer
     }
-  deriving (Eq, Show, Read, Typeable)
+  deriving (Eq, Show, Read, Typeable, Generic, Data)
+
+instance SOP.Generic AulaData
 
 makeLenses ''AulaData
 

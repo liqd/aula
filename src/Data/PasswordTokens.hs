@@ -1,12 +1,15 @@
-{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE TemplateHaskell    #-}
 
-{-# OPTIONS_GHC -Wall -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror   #-}
 
 module Data.PasswordTokens
 where
 
 import Control.Lens
+import Data.Data (Data)
 import Data.SafeCopy (base, deriveSafeCopy)
+import Data.Typeable (Typeable)
 import Data.Map as Map
 
 import Data.DoubleMap as DMap
@@ -23,12 +26,12 @@ type U = AUID User
 -- * types
 
 newtype Validity = Validity { _validityTimeOut :: Timestamp }
-  deriving (Eq, Ord, Read, Show)
+  deriving (Eq, Ord, Read, Show, Typeable, Data)
 
 data PasswordTokens = PasswordTokens {
       _passwordTokens :: Map U (Map PasswordToken Validity)
     }
-  deriving (Eq, Ord, Read, Show)
+  deriving (Eq, Ord, Read, Show, Typeable, Data)
 
 makeLenses ''PasswordTokens
 

@@ -1,12 +1,19 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TemplateHaskell            #-}
 
-{-# OPTIONS_GHC -Wall -Werror    #-}
+{-# OPTIONS_GHC -Wall -Werror           #-}
 
 module Data.Delegation
     ( Delegatee(..)
     , Delegate(..)
     , Delegations
+
+    , DelegationMap
+    , CoDelegationMap
+
     , emptyDelegations
     , removeDelegationsByScope
     , setDelegation
@@ -31,15 +38,18 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set
+import qualified Generics.SOP as SOP
 
 import Data.Functor.Infix ((<$$>))
 import Data.SafeCopy (base, deriveSafeCopy)
+import Data.Typeable (Typeable)
+import Data.Data (Data)
+import GHC.Generics (Generic)
 
 import Control.Monad.Reader
 
 import Data.DoubleMap as DMap
 import Types
-
 
 --  Type parameters for this module are 'U' and 'S'.  Fixing them
 -- is necessary as a workaround for an issue of 'dericeSafeCopy'.
@@ -63,34 +73,34 @@ type S = DScope
 -- | Delegatees give their vote to me, so i vote for them:
 -- "für wen stimme ich ab?" ("for whom do i vote?")
 newtype Delegatee v = Delegatee { unDelegatee :: v }
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Generic, Typeable, Data)
 
 -- | Delegates get their vote from me, so they vote for me:
 -- "wer stimmt für mich ab?" ("who votes for me?")
 newtype Delegate  v = Delegate { unDelegate :: v }
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Generic, Typeable, Data)
 
-data DelegationMap = DelegationMap {
+newtype DelegationMap = DelegationMap {
         _delegationMap
             :: Map
                 (Delegatee U)
                 (Map S (Delegate U))
     }
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Generic, Typeable, Data)
 
-data CoDelegationMap = CoDelegationMap {
+newtype CoDelegationMap = CoDelegationMap {
         _coDelegationMap
             :: Map
                 (Delegate U)
                 (Map S (Set (Delegatee U)))
     }
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Generic, Typeable, Data)
 
 data Delegations = Delegations {
       _delegations   :: DelegationMap
     , _coDelegations :: CoDelegationMap
     }
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Generic, Typeable, Data)
 
 makeLenses ''DelegationMap
 makeLenses ''CoDelegationMap
@@ -217,3 +227,11 @@ deriveSafeCopy 0 'base ''Delegatee
 deriveSafeCopy 0 'base ''CoDelegationMap
 deriveSafeCopy 0 'base ''DelegationMap
 deriveSafeCopy 0 'base ''Delegations
+
+-- * SOP
+
+instance SOP.Generic (Delegate v)
+instance SOP.Generic (Delegatee v)
+instance SOP.Generic CoDelegationMap
+instance SOP.Generic DelegationMap
+instance SOP.Generic Delegations
