@@ -702,6 +702,11 @@ instance FormPage AdminEditClass where
     formPage v form p@(AdminEditClass schoolClss users) =
         adminFrame p . semanticDiv p $ do
             div_ . h1_ [class_ "admin-main-heading"] $ schoolClss ^. className . html
+            form $ do
+                div_ $ do
+                    p_ "Klasse"
+                    DF.inputText "classname" v
+                DF.inputSubmit "Umbenennen"
             div_ $ a_ [class_ "admin-buttons", href_ . U.adminDlPass $ schoolClss]
                 "Passwort-Liste"
             table_ [class_ "admin-table"] $ do
@@ -713,11 +718,6 @@ instance FormPage AdminEditClass where
                     td_ . span_ [class_ "img-container"] $ userAvatarImg avatarSizeSmall user
                     td_ $ user ^. userLogin . unUserLogin . html
                     td_ $ a_ [href_ $ U.adminEditUser user] "bearbeiten"
-            form $ do
-                div_ $ do
-                    p_ "Klasse"
-                    DF.inputText "classname" v
-                DF.inputSubmit "Umbenennen"
 
 
 adminViewUsers :: ActionPersist m => Maybe SearchUsers -> Maybe SortUsersBy -> m AdminViewUsers
