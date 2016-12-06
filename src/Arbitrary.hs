@@ -96,6 +96,7 @@ import qualified Data.Tree as Tree
 
 import Access
 import Config
+import Data.Delegation
 import Data.PasswordTokens
 import Data.UriPath hiding ((</>))
 import Logger.EventLog
@@ -452,6 +453,34 @@ instance Arbitrary FinalizePasswordViaEmail where
 instance Arbitrary PageAdminTermsOfUsePayload where
     arbitrary = PageAdminTermsOfUsePayload <$> arb
     shrink (PageAdminTermsOfUsePayload x) = PageAdminTermsOfUsePayload <$> shr x
+
+instance Arbitrary Settings where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary v => Arbitrary (Delegatee v) where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary v => Arbitrary (Delegate v) where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary DelegationMap where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary CoDelegationMap where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary Delegations where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary AulaData where
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 -- * idea
 
@@ -849,8 +878,6 @@ instance Arbitrary InitialPasswordsCsv where
 instance Arbitrary CsvUserRecord where
     arbitrary = garbitrary
     shrink    = gshrink
-
--- FIXME: instance Arbitrary Delegation
 
 instance Arbitrary PhaseChangeDir where
     arbitrary = garbitrary
