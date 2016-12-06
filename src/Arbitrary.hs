@@ -104,7 +104,7 @@ import Frontend.Filter
 import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
-import Frontend.Prelude (set, (^.), over, (.~), (%~), (&))
+import Frontend.Prelude (view, set, (^.), over, (.~), (%~), (&))
 import Persistent
 import Types
 
@@ -471,6 +471,15 @@ instance Arbitrary Category where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary ClassName where
+    arbitrary = elements classNames
+    shrink x  = dropWhileX x classNames
+
+classNames :: [ClassName]
+classNames = ClassName <$>
+                ([ cs $ show age <> [branch] | age <- [5..12 :: Int], branch <- ['a'..'c'] ] <>
+                 [ "___", "wef-wef", "wef-wef-wef", "---" ])
+
 instance Arbitrary IdeaLikeValue where
     arbitrary = garbitrary
     shrink    = gshrink
@@ -649,14 +658,11 @@ instance Arbitrary IdeaSpace where
 
 instance Arbitrary SchoolClass where
     arbitrary = elements schoolClasses
-    shrink  x = dropWhileX x schoolClasses
+    shrink x  = dropWhileX x schoolClasses
 
 schoolClasses :: [SchoolClass]
-schoolClasses = SchoolClass <$> years <*> names
-  where
-    years = [theOnlySchoolYearHack]
-    names = [ cs $ show age <> [branch] | age <- [5..12 :: Int], branch <- ['a'..'c'] ]
-         <> [ "___", "wef-wef", "wef-wef-wef", "---" ]
+schoolClasses = SchoolClass <$> [theOnlySchoolYearHack]
+                            <*> (view unClassName <$> classNames)
 
 instance Arbitrary ProtoTopic where
     arbitrary =
@@ -762,10 +768,10 @@ instance Arbitrary UsersQuery where
     arbitrary = garbitrary
     shrink    = gshrink
 
-guestOrStudent :: SchoolClass -> Gen Role
-guestOrStudent clss = elements
-    [ Student clss
-    , ClassGuest clss
+guestOrStudent :: Maybe SchoolClass -> Gen Role
+guestOrStudent mclss = elements
+    [ Student mclss
+    , ClassGuest mclss
     ]
 
 instance Arbitrary InitialPassword where
@@ -818,7 +824,7 @@ instance Arbitrary ResetPasswordFormData where
 
 userForClass :: SchoolClass -> Gen User
 userForClass clss =
-    arb <**> (set userRoleSet . Set.singleton <$> guestOrStudent clss)
+    arb <**> (set userRoleSet . Set.singleton <$> guestOrStudent (Just clss))
 
 instance Arbitrary Durations where
     arbitrary = garbitrary

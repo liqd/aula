@@ -42,6 +42,7 @@ import Persistent.Api
     , SetUserLogin(SetUserLogin)
     , AddUserRole(AddUserRole)
     , RemUserRole(RemUserRole)
+    , RenameClass(RenameClass)
     , SetTermsOfUse(SetTermsOfUse)
     )
 import Persistent
@@ -563,8 +564,8 @@ instance SOP.Generic RoleSelection
 
 instance HasUILabel RoleSelection where
     uilabel = \case
-        RoleSelStudent     -> uilabel $ Student (SchoolClass 0 nil)
-        RoleSelClassGuest  -> uilabel $ ClassGuest (SchoolClass 0 nil)
+        RoleSelStudent     -> uilabel $ Student Nothing
+        RoleSelClassGuest  -> uilabel $ ClassGuest Nothing
         RoleSelSchoolGuest -> uilabel SchoolGuest
         RoleSelModerator   -> uilabel Moderator
         RoleSelPrincipal   -> uilabel Principal
@@ -668,7 +669,7 @@ instance FormPage AdminEditUser where
                         th_ nil
                     tbody_ . forM_ (user ^.. userRoles) $ \role_ -> tr_ $ do
                         td_ $ role_ ^. uilabeledST . html
-                        td_ $ role_ ^. roleSchoolClass . uilabeledST . html
+                        td_ $ role_ ^. roleSchoolClass . _Just . uilabeledST . html
                         td_ $ postButton_
                                 [ class_ "btn-cta"
                                 , jsReloadOnClickConfirm "Soll diese Rolle wirklich entfernt werden?"
@@ -683,11 +684,19 @@ instance FormPage AdminEditUser where
                     br_ []
                     DF.inputSubmit "Änderungen speichern"
 
-instance ToHtml AdminEditClass where
-    toHtml = toHtmlRaw
-    toHtmlRaw p@(AdminEditClass schoolClss users) =
+instance FormPage AdminEditClass where
+    type FormPagePayload AdminEditClass = ClassName
+    type FormPageResult  AdminEditClass = ClassName
+    formAction (AdminEditClass schoolClss _)     = U.adminEditClass schoolClss
+    redirectOf (AdminEditClass schoolClss _) new = U.adminEditClass (schoolClss & className .~ (new ^. unClassName))
+    makeForm (AdminEditClass schoolClss _) = classnameF (Just (ClassName $ schoolClss ^. className))
+    formPage v form p@(AdminEditClass schoolClss users) =
         adminFrame p . semanticDiv p $ do
             div_ . h1_ [class_ "admin-main-heading"] $ schoolClss ^. className . html
+            div_ [class_ "container-info"] $ do
+                form $ do
+                    DF.inputText "classname" v
+                DF.inputSubmit "Klasse umbenennen"
             div_ $ a_ [class_ "admin-buttons", href_ . U.adminDlPass $ schoolClss]
                 "Passwort-Liste"
             table_ [class_ "admin-table"] $ do
@@ -710,7 +719,7 @@ adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m
 adminCreateUser = formPageHandlerCalcMsg
     (AdminCreateUser <$> query getSchoolClasses)
     (\up -> do
-        forM_ (up ^.. createUserRoleSet . folded . roleSchoolClass) $
+        forM_ (up ^.. createUserRoleSet . folded . roleSchoolClass . _Just) $
             update . AddIdeaSpaceIfNotExists . ClassSpace
         adminCreateUserHelper
             (up ^. createUserLogin)
@@ -767,17 +776,19 @@ adminEditUser uid = formPageHandlerCalcMsg
     (\(AdminEditUser u) _ _ -> unwords ["Nutzer", userFullName u, "wurde geändert."])
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role
-fromRoleSelection RoleSelStudent     = Student
-fromRoleSelection RoleSelClassGuest  = ClassGuest
+fromRoleSelection RoleSelStudent     = Student . Just
+fromRoleSelection RoleSelClassGuest  = ClassGuest . Just
 fromRoleSelection RoleSelSchoolGuest = const SchoolGuest
 fromRoleSelection RoleSelModerator   = const Moderator
 fromRoleSelection RoleSelPrincipal   = const Principal
 fromRoleSelection RoleSelAdmin       = const Admin
 
-adminEditClass :: ActionPersist m => SchoolClass -> m AdminEditClass
-adminEditClass clss =
-    AdminEditClass clss
-    <$> (makeUserView <$$> query (getUsersInClass clss))
+adminEditClass :: ActionPersist m => SchoolClass -> FormPageHandler m AdminEditClass
+adminEditClass clss = formPageHandlerCalcMsg
+    (AdminEditClass clss <$> (makeUserView <$$> query (getUsersInClass clss)))
+    (\new -> update (RenameClass clss new) $> new)
+    (\(AdminEditClass old _) (ClassName new) _ ->
+        ST.unwords ["Klasse", old ^. className, "wurde in", new, "umbenannt."])
 
 data AdminDeleteUserPayload = AdminDeleteUserPayload
   deriving (Eq, Show)
@@ -855,9 +866,8 @@ instance FormPage AdminCreateClass where
     formAction _   = U.adminCreateClass
     redirectOf _ _ = U.adminViewClasses
 
-    makeForm _ = BatchCreateUsersFormData
-        <$> ("classname" .: validate "Klasse" classnameV (DF.string Nothing))
-        <*> ("file"      .: DF.file)
+    makeForm _ = BatchCreateUsersFormData <$> (view unClassName <$> classnameF Nothing)
+                                          <*> ("file" .: DF.file)
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"
@@ -887,7 +897,7 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
             Right records -> do
                 let schoolcl = SchoolClass theOnlySchoolYearHack clname
                 update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
-                forM_ records . p . Set.singleton $ Student schoolcl
+                forM_ records . p . Set.singleton . Student $ Just schoolcl
 
     p :: Set Role -> CsvUserRecord -> m ()
     p _     (CsvUserRecord _ _ _ _                          (Just _)) = do

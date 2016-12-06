@@ -29,6 +29,7 @@ module Frontend.Validation
     , usernameV'
     , usernameV
     , classnameV
+    , classnameF
     , passwordV
     , titleV
     , markdownV
@@ -51,8 +52,10 @@ import Text.Parsec as TP hiding (Reply(..))
 import Text.Parsec.Error
 import qualified Data.Text as ST
 
+import Action
 import Frontend.Constant
 import Frontend.Prelude as Frontend hiding ((<|>))
+import Persistent (classNameIsAvailable)
 
 
 type FieldName = String
@@ -234,6 +237,15 @@ classnameV = fieldParser
   where
     minClassnameLength = 2
     maxClassnameLength = 40
+
+classnameF :: (ActionPersist m, Monad n) => Maybe ClassName -> DF.Form (HtmlT n ()) m ClassName
+classnameF mcl =
+    "classname" .: DF.validateM chk (ClassName <$> Frontend.Validation.validate "Klasse" classnameV
+                                                            (DF.text (mcl ^? _Just . unClassName)))
+  where
+    chk cl = do
+        isAvailable <- query $ classNameIsAvailable cl
+        pure $ if isAvailable then DF.Success cl else DF.Error "Klassenname ist bereits vergeben"
 
 titleV :: StringFieldValidator
 titleV = fieldParser (cs <$> many1 anyChar) "nicht leer"

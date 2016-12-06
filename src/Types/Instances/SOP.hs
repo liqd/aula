@@ -10,6 +10,7 @@ import Types.Core
 
 instance SOP.Generic (AUID a)
 instance SOP.Generic Category
+instance SOP.Generic ClassName
 instance SOP.Generic Comment
 instance SOP.Generic CommentContent
 instance SOP.Generic CommentContext
@@ -46,6 +47,7 @@ instance SOP.Generic ProtoIdeaVote
 instance SOP.Generic ProtoTopic
 instance SOP.Generic ProtoUser
 instance SOP.Generic Role
+instance SOP.Generic SchoolClass
 instance SOP.Generic Topic
 instance SOP.Generic UpDown
 instance SOP.Generic User

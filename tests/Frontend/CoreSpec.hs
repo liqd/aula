@@ -67,7 +67,6 @@ spec = do
         , H (arb :: Gen AdminViewClasses)
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageTermsOfUse)
-        , H (arb :: Gen AdminEditClass)
         , H (arb :: Gen CommentWidget)
         , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen HttpErrorPage)
@@ -83,6 +82,7 @@ spec = do
         , formTest (arb :: Gen AdminEditUser)
         , formTest (arb :: Gen AdminDeleteUser)
 --        , formTest (arb :: Gen AdminCreateUser) -- FIXME: Investigate issue
+        , formTest (arb :: Gen AdminEditClass)
         , formTest (arb :: Gen AdminCreateClass)
         , formTest (arb :: Gen AdminPhaseChange)
         , formTest (arb :: Gen PageAdminResetPassword)
@@ -104,7 +104,7 @@ spec = do
                       (Just (u ^. userLogin))
                       (UserFirstName "first")
                       (UserLastName "last")
-                      (Set.singleton (Student (head schoolClasses)))
+                      (Set.singleton (Student (Just (head schoolClasses))))
                       (u ^?! userPassword . _UserPassInitial)
                       Nothing
                       nil
@@ -266,7 +266,7 @@ instance PayloadToEnv Freeze where
 instance PayloadToEnv Role where
     payloadToEnvMapping _ v r = \case
         "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (r ^. roleSelection)]
-        "class" -> pure $ TextInput . selectValue "class" v classes <$> r ^.. roleSchoolClass
+        "class" -> pure $ TextInput . selectValue "class" v classes <$> r ^.. roleSchoolClass . _Just
       where
         classes = (id &&& cs . view className) <$> schoolClasses
 
@@ -495,7 +495,8 @@ instance ArbFormPagePayload AdminAddRole where
     arbFormPagePayload (AdminAddRole _ classes) = els roles
       where
         els    = Test.QuickCheck.elements
-        roles  = ([Student, ClassGuest] <*> classes) <> [SchoolGuest, Moderator, Principal, Admin]
+        roles  = ([Student, ClassGuest] <*> (Just <$> classes))
+              <> [SchoolGuest, Moderator, Principal, Admin]
 
 instance ArbFormPagePayload AdminEditUser where
     arbFormPagePayload (AdminEditUser _) = arbMaybe arbValidUserLogin
@@ -503,6 +504,12 @@ instance ArbFormPagePayload AdminEditUser where
 instance PayloadToEnv (Maybe UserLogin) where
     payloadToEnvMapping _ _ mlogin = \case
         "login" -> pure $ mlogin ^.. _Just . _UserLogin . to TextInput
+
+instance ArbFormPagePayload AdminEditClass
+
+instance PayloadToEnv ClassName where
+    payloadToEnvMapping _ _ (ClassName classname) = \case
+        "classname" -> pure [TextInput classname]
 
 instance ArbFormPagePayload AdminPhaseChange
 

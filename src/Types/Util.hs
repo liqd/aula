@@ -25,7 +25,7 @@ where
 import Control.Lens hiding ((<.>))
 import Data.Set.Lens (setOf)
 import Crypto.Scrypt
-import Data.Set as Set (Set, intersection, singleton, member)
+import Data.Set as Set (Set, intersection, member)
 import Data.Map as Map (filter, fromList, size)
 import Data.Maybe (mapMaybe)
 import Data.Proxy (Proxy(Proxy))
@@ -126,13 +126,6 @@ data PasswordTokenState
     | Valid
   deriving (Eq, Generic, Ord, Read, Show)
 
-
-_GuestRole :: Prism' Role IdeaSpace
-_GuestRole = prism guestRole $ \case
-    SchoolGuest  -> pure SchoolSpace
-    ClassGuest c -> pure $ ClassSpace c
-    r            -> Left r
-
 -- | RoleScope is a summary about roles. It summarizes the visibility of a given role
 -- or set of roles. The RoleScope tells whether the user is limited to a set of classes
 -- or if the user has access to all classes. Roles such as Moderator, Principal and Admin
@@ -189,7 +182,7 @@ userRoles :: Fold User Role
 userRoles = userRoleSet . folded
 
 userSchoolClasses :: Fold User SchoolClass
-userSchoolClasses = userRoles . roleSchoolClass
+userSchoolClasses = userRoles . roleSchoolClass . _Just
 
 hasRole :: User -> Role -> Bool
 hasRole user role_ = role_ `Set.member` (user ^. userRoleSet)
@@ -206,8 +199,8 @@ canCreateIdeas u = any ((||) <$> has _Student <*> has _Moderator) (u ^.. userRol
 roleScope :: Getter Role RoleScope
 roleScope = to $ \r ->
     case r ^? roleSchoolClass of
-        Nothing -> SchoolScope
-        Just cl -> ClassesScope $ Set.singleton cl
+        Nothing  -> SchoolScope
+        Just mcl -> ClassesScope $ setOf _Just mcl
 
 rolesScope :: Fold (Set Role) RoleScope
 rolesScope = folded . roleScope

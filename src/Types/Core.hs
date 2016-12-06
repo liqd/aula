@@ -218,8 +218,8 @@ type instance Proto User = ProtoUser
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
 data Role =
-    Student    { _roleSchoolClass :: SchoolClass }
-  | ClassGuest { _roleSchoolClass :: SchoolClass } -- ^ e.g., parents
+    Student    { _roleSchoolClass :: Maybe SchoolClass }
+  | ClassGuest { _roleSchoolClass :: Maybe SchoolClass } -- ^ e.g., parents
   | SchoolGuest  -- ^ e.g., researchers
   | Moderator
   | Principal
@@ -231,7 +231,9 @@ parseRole = \case
     ["admin"]      -> pure Admin
     ["principal"]  -> pure Principal
     ["moderator"]  -> pure Moderator
-    ("student":xs) -> Student <$> parseSchoolClassCode xs
+    ["student"]    -> pure $ Student Nothing
+    ("student":xs) -> Student . Just <$> parseSchoolClassCode xs
+    ["guest"]      -> pure $ ClassGuest Nothing
     ("guest":xs)   -> guestRole <$> parseIdeaSpaceCode xs
     _              -> Left "Ill-formed role"
 
@@ -260,7 +262,7 @@ parseSchoolClassCode' = parseSchoolClassCode . ST.splitOn "-"
 guestRole :: IdeaSpace -> Role
 guestRole = \case
     SchoolSpace  -> SchoolGuest
-    ClassSpace c -> ClassGuest c
+    ClassSpace c -> ClassGuest (Just c)
 
 
 -- * idea
@@ -468,6 +470,9 @@ data IdeaSpace =
   | ClassSpace { _ideaSpaceSchoolClass :: SchoolClass }
   deriving (Eq, Show, Read, Generic)
 
+newtype ClassName = ClassName { _unClassName :: ST }
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
+
 -- | "Klasse".  (The school year is necessary as the class name is used for a fresh set of students
 -- every school year.)
 data SchoolClass = SchoolClass
@@ -475,12 +480,6 @@ data SchoolClass = SchoolClass
     , _className       :: ST  -- ^ e.g. "7a"
     }
   deriving (Eq, Ord, Show, Read, Generic)
-
--- | FIXME: SchoolClass shouldn't have an empty text, ever.  We avoid the distinction in some other
--- way, like with making 'Role' a parametric type.  (anyway, could we make this a pattern synonym?)
-nilSchoolClass :: SchoolClass -> Bool
-nilSchoolClass (SchoolClass _ "") = True
-nilSchoolClass _                  = False
 
 -- | FIXME: needs to be gone by the end of school year 2016!
 theOnlySchoolYearHack :: Int
@@ -690,25 +689,25 @@ instance FromHttpApiData Role where
 
 instance HasUILabel Role where
     uilabel = \case
-        (Student c)
-          | nilSchoolClass c -> "Schüler"
-          | otherwise        -> "Schüler (" <> uilabel c <> ")"
-        (ClassGuest c)
-          | nilSchoolClass c -> "Gast"
-          | otherwise        -> "Gast (" <> uilabel c <> ")"
-        SchoolGuest    -> "Gast (Schule)"
-        Moderator      -> "Moderator"
-        Principal      -> "Direktor"
-        Admin          -> "Administrator"
+        Student Nothing     -> "Schüler"
+        Student (Just c)    -> "Schüler (" <> uilabel c <> ")"
+        ClassGuest Nothing  -> "Gast"
+        ClassGuest (Just c) -> "Gast (" <> uilabel c <> ")"
+        SchoolGuest         -> "Gast (Schule)"
+        Moderator           -> "Moderator"
+        Principal           -> "Direktor"
+        Admin               -> "Administrator"
 
 instance HasUriPart Role where
     uriPart = \case
-        (Student c)    -> "student-" <> uriPart c
-        (ClassGuest c) -> "guest-" <> uriPart c
-        SchoolGuest    -> "guest-school"
-        Moderator      -> "moderator"
-        Principal      -> "principal"
-        Admin          -> "admin"
+        Student Nothing     -> "student"
+        Student (Just c)    -> "student-" <> uriPart c
+        ClassGuest Nothing  -> "guest"
+        ClassGuest (Just c) -> "guest-" <> uriPart c
+        SchoolGuest         -> "guest-school"
+        Moderator           -> "moderator"
+        Principal           -> "principal"
+        Admin               -> "admin"
 
 
 -- ** idea

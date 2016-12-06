@@ -25,7 +25,7 @@ spec :: Spec
 spec = describe "file upload" $ do
     describe "http" . around withServer $ do
         let classPart :: Part
-            classPart = partString (fileUploadPath ".classname") "7a"
+            classPart = partString (fileUploadPath ".classname") "new7a"
 
             filePart :: Part
             filePart = p & partFileName ?~ "x.csv"

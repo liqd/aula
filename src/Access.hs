@@ -201,7 +201,7 @@ delegationCapabilities current (Just other) _ _
 -- delegation for idea and topic
 delegationCapabilities _ _ (Just SchoolSpace) _ = [CanDelegate, CanDelegateInSchool]
 delegationCapabilities current _ (Just (ClassSpace clss)) _
-  | clss `elem` (current ^.. userRoles . _Student) = [CanDelegate, CanDelegateInSchool, CanDelegateInClass]
+  | clss `elem` (current ^.. userRoles . _Student . _Just) = [CanDelegate, CanDelegateInSchool, CanDelegateInClass]
 
 -- a student is able to delegate
 delegationCapabilities _ _ _ _ = [CanDelegate]

@@ -402,7 +402,7 @@ type AulaAdmin =
   :<|> User ::> "role" :> "add" :> FormHandler AdminAddRole
   :<|> User ::> Role ::> "delete" :> PostH NeedAdmin
   :<|> User ::> "edit" :> FormHandler AdminEditUser
-  :<|> SchoolClass ::> "edit" :> GetH (Frame AdminEditClass)
+  :<|> SchoolClass ::> "edit" :> FormHandler AdminEditClass
   :<|> User ::> "delete" :> FormHandler AdminDeleteUser
        -- event log
   :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
@@ -427,7 +427,7 @@ aulaAdmin =
   :<|> form . Page.adminAddRole
   :<|> postAdminRemRole
   :<|> form . Page.adminEditUser
-  :<|> runHandler . Page.adminEditClass
+  :<|> form . Page.adminEditClass
   :<|> form . Page.adminDeleteUser
   :<|> form Page.adminEventsProtocol
   :<|> runGetHandler . Page.adminInitialPasswordsCsv
