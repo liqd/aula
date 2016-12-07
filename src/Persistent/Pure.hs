@@ -701,6 +701,10 @@ ideaChangedLocation i f t = if f == t
     then Nothing
     else Just $ IdeaChangedLocation i f t
 
+moveIdea :: AUID Idea -> (IdeaLocation -> IdeaLocation) -> AUpdate ()
+moveIdea ideaId updateLoc = withIdea ideaId . ideaLocation %= updateLoc
+    -- TODO: update the comments/comment-votes keys
+
 moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate [IdeaChangedLocation]
 moveIdeasToLocation ideaIds newloc = do
     result <- forM ideaIds $ \ideaId -> do
@@ -709,12 +713,11 @@ moveIdeasToLocation ideaIds newloc = do
                   (idea ^? ideaLocation . ideaLocationTopicId)
                   (newloc ^? ideaLocationTopicId)
     for_ ideaIds $ \ideaId ->
-        withIdea ideaId . ideaLocation .= newloc
+        moveIdea ideaId (const newloc)
     return $ catMaybes result
 
 moveIdeaToTopic :: AUID Idea -> MoveIdea -> AUpdate ()
-moveIdeaToTopic ideaId mTopicId =
-    withIdea ideaId . ideaLocation %= changeTopic mTopicId
+moveIdeaToTopic ideaId mTopicId = moveIdea ideaId (changeTopic mTopicId)
   where
     changeTopic MoveIdeaToWild      s = IdeaLocationSpace (s ^. ideaLocationSpace)
     changeTopic (MoveIdeaToTopic t) s = IdeaLocationTopic (s ^. ideaLocationSpace) t
