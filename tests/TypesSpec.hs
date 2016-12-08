@@ -56,6 +56,16 @@ spec = do
             it "aeson-encodes" . property $
                 \(dn :: DelegationNetwork) -> LBS.length (Aeson.encode dn) `shouldNotBe` 0
 
+    describe "Fixing AulaData" $ do
+        it "is should not remove any Timestamp value" . property $ \d ->
+            let d' = fixAulaData d
+                len = lengthOf (template :: Traversal' AulaData Timestamp) in
+            len d' `shouldBe` len d
+
+        it "is idempotent" . property $ \d ->
+            let d' = fixAulaData d in
+            fixAulaData d' `shouldBe` d'
+
     describe "Renaming classes" $ do
         it "works" . property $ \(d :: AulaData) ->
             let f cl = cl & unClassName <>~ "TEST" in

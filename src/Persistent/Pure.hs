@@ -165,6 +165,10 @@ module Persistent.Pure
     , aulaUserLogins
 
     , renameInAulaData
+
+    , fixComment
+    , fixIdea
+    , fixAulaData
     )
 where
 
@@ -1184,6 +1188,18 @@ dangerousResetAulaData = put emptyAulaData
 
 dangerousRenameAllLogins :: ST -> AUpdate ()
 dangerousRenameAllLogins suffix = aulaUserLogins . _UserLogin <>= suffix
+
+fixComment :: IdeaLocation -> Comment -> Comment
+fixComment loc comment = comment
+    & commentMeta . metaKey . ckIdeaLocation .~ loc
+    & commentVotes . each . commentVoteMeta . metaKey . cvCommentKey . ckIdeaLocation .~ loc
+    & commentReplies . each %~ fixComment loc
+
+fixIdea :: Idea -> Idea
+fixIdea idea = idea & ideaComments . each %~ fixComment (idea ^. ideaLocation)
+
+fixAulaData :: AulaData -> AulaData
+fixAulaData = dbIdeaMap . each %~ fixIdea
 
 
 makeLenses ''IdeaChangedLocation
