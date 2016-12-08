@@ -16,6 +16,7 @@ module Data.Delegation
 
     , emptyDelegations
     , removeDelegationsByScope
+    , filterDelegationsByScope
     , setDelegation
     , deleteDelegation
     , delegates
@@ -121,6 +122,14 @@ removeDelegationsByScope dscope (Delegations (DelegationMap dm) (CoDelegationMap
     Delegations
         (DelegationMap   (Map.map (Map.delete dscope) dm))
         (CoDelegationMap (Map.map (Map.delete dscope) codm))
+
+filterDelegationsByScope :: (DScope -> Bool) -> Delegations -> Delegations
+filterDelegationsByScope predicate (Delegations (DelegationMap dm) (CoDelegationMap codm)) =
+    Delegations
+        (DelegationMap   (Map.map (Map.filterWithKey predicate') dm))
+        (CoDelegationMap (Map.map (Map.filterWithKey predicate') codm))
+  where
+    predicate' k _ = predicate k
 
 
 -- * delegation handling

@@ -99,6 +99,8 @@ module Persistent.Pure
     , checkClassNameIsAvailable
     , classNameIsAvailable
     , renameClass
+    , filterClasses
+    , deleteClass
     , destroyClass
     , addUserRole
     , remUserRole
@@ -124,6 +126,7 @@ module Persistent.Pure
     , dbQuorums
     , dbFreeze
     , dbUserMap
+    , dbSpaceSet
     , addDelegation
     , withdrawDelegation
     , delegationScopeForest
@@ -186,6 +189,7 @@ import Data.Functor
 import Data.Functor.Infix ((<$$>))
 import Data.List (nub)
 import Data.Maybe
+import Data.Map (Map)
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.Set.Lens
@@ -605,19 +609,34 @@ renameClass (SchoolClass _ old) new
         checkClassNameIsAvailable new
         modify . renameInAulaData $ \x -> if x == old then new else x
 
-deleteInMapBy :: Eq b => Fold a b -> b -> AMap a -> AMap a
-deleteInMapBy selector b = Map.filter (\x -> x ^? selector /= Just b)
+-- @filterInMapBy f p m@
+-- In the map @m@, keep only the bindings for which all the targets of the fold @f@ satisfify
+-- the predicate @p@.
+filterInMapBy :: Fold a b -> (b -> Bool) -> Map k a -> Map k a
+filterInMapBy selector predicate = Map.filter (allOf selector predicate)
+
+-- @filterInSetBy f p s@
+-- In the set @m@, keep only the elements for which all the targets of the fold @f@ satisfify
+-- the predicate @p@.
+filterInSetBy :: Fold a b -> (b -> Bool) -> Set a -> Set a
+filterInSetBy selector predicate = Set.filter (allOf selector predicate)
+
+filterClasses :: (SchoolClass -> Bool) -> AulaData -> AulaData
+filterClasses p d = d
+    & dbSpaceSet    %~ filterInSetBy ideaSpaceSchoolClass                                       p
+    & dbIdeaMap     %~ filterInMapBy (ideaLocation . ideaLocationSpace . ideaSpaceSchoolClass)  p
+    & dbTopicMap    %~ filterInMapBy (topicIdeaSpace . ideaSpaceSchoolClass)                    p
+    & dbDelegations %~ filterDelegationsByScope (allOf (dScopeIdeaSpace . ideaSpaceSchoolClass) p)
+    & dbUserMap . each . userRoleSet . setmapped . roleSchoolClass %~ filterRole
+  where
+    filterRole x | allOf _Just p x = x
+                 | otherwise       = Nothing
+
+deleteClass :: SchoolClass -> AulaData -> AulaData
+deleteClass clss = filterClasses (/= clss)
 
 destroyClass :: SchoolClass -> AUpdate ()
-destroyClass clss = do
-    dbSpaceSet . at (ClassSpace clss) .= Nothing
-    dbIdeaMap  %= deleteInMapBy (ideaLocation . ideaLocationSpace . ideaSpaceSchoolClass) clss
-    dbTopicMap %= deleteInMapBy (topicIdeaSpace . ideaSpaceSchoolClass)                   clss
-    dbUserMap . each . userRoleSet . setmapped . roleSchoolClass %= deleteRole
-    dbDelegations %= removeDelegationsByScope (DScopeIdeaSpace (ClassSpace clss))
-  where
-    deleteRole x | x == Just clss = Nothing
-                 | otherwise      = x
+destroyClass = modify . deleteClass
 
 addUserRole :: AUID User -> Role -> AUpdate ()
 addUserRole uid role_ = withUser uid . userRoleSet %= Set.insert role_
