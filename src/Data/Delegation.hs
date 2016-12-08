@@ -29,6 +29,7 @@ module Data.Delegation
     , votingPower
     , findDelegationsByScope
     , renameDelegations
+    , fromList
     )
 where
 
@@ -218,6 +219,9 @@ renameDelegations :: (S -> S) -> Delegations -> Delegations
 renameDelegations f dls =
     dls & delegations . delegationMap . each %~ renameMapKeys f
         & coDelegations . coDelegationMap . each %~ renameMapKeys f
+
+fromList :: [(U, S, U)] -> Delegations
+fromList = foldr (\(f, d, t) -> setDelegation f d t) emptyDelegations
 
 
 -- * safe copy

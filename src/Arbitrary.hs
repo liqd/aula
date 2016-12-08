@@ -96,7 +96,7 @@ import qualified Data.Tree as Tree
 
 import Access
 import Config
-import Data.Delegation
+import Data.Delegation as D
 import Data.PasswordTokens
 import Data.UriPath hiding ((</>))
 import Logger.EventLog
@@ -475,7 +475,7 @@ instance Arbitrary CoDelegationMap where
     shrink    = gshrink
 
 instance Arbitrary Delegations where
-    arbitrary = garbitrary
+    arbitrary = D.fromList <$> arb
     shrink    = gshrink
 
 instance Arbitrary AulaData where
