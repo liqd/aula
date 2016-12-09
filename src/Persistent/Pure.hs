@@ -172,6 +172,7 @@ module Persistent.Pure
     , fixComment
     , fixIdea
     , fixAulaData
+    , fixAulaDataUpdate
     )
 where
 
@@ -1222,5 +1223,7 @@ fixIdea idea = idea & ideaComments . each %~ fixComment (idea ^. ideaLocation)
 fixAulaData :: AulaData -> AulaData
 fixAulaData = dbIdeaMap . each %~ fixIdea
 
+fixAulaDataUpdate :: AUpdate ()
+fixAulaDataUpdate = modify fixAulaData
 
 makeLenses ''IdeaChangedLocation
