@@ -702,8 +702,7 @@ ideaChangedLocation i f t = if f == t
     else Just $ IdeaChangedLocation i f t
 
 moveIdea :: AUID Idea -> (IdeaLocation -> IdeaLocation) -> AUpdate ()
-moveIdea ideaId updateLoc = withIdea ideaId . ideaLocation %= updateLoc
-    -- TODO: update the comments/comment-votes keys
+moveIdea ideaId updateLoc = withIdea ideaId %= fixIdea . (ideaLocation %~ updateLoc)
 
 moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate [IdeaChangedLocation]
 moveIdeasToLocation ideaIds newloc = do
