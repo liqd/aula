@@ -740,6 +740,7 @@ test-suite spec
       AulaTests.Stories.Interpreter.WebDriver
       AulaTests.Stories.Tests
       AulaTests.StoriesSpec
+      Data.DelegationSpec
       Data.MarkdownSpec
       Data.PasswordTokensSpec
       DelegationSpec

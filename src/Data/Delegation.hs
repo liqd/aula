@@ -30,10 +30,13 @@ module Data.Delegation
     , findDelegationsByScope
     , renameDelegations
     , fromList
+    , toList
     )
 where
 
+import Control.Exception (assert)
 import Control.Lens hiding (from, to)
+import Data.List (sort)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
@@ -222,6 +225,18 @@ renameDelegations f dls =
 
 fromList :: [(U, S, U)] -> Delegations
 fromList = foldr (\(f, d, t) -> setDelegation f d t) emptyDelegations
+
+toList :: Delegations -> [(U, S, U)]
+toList (Delegations (DelegationMap a) (CoDelegationMap b)) = assert (sort a' == sort b') a'
+  where
+    a' = mconcat $ (\(Delegatee f, submap) ->
+            (\(d, Delegate t) -> (f, d, t)) <$> Map.toList submap)
+                <$> Map.toList a
+    b' = mconcat . mconcat $ (\(Delegate f, submap) ->
+            (\(d, delegateeset) ->
+                (\(Delegatee t) -> (t, d, f)) <$> Set.toList delegateeset)
+                    <$> Map.toList submap)
+                        <$> Map.toList b
 
 
 -- * safe copy

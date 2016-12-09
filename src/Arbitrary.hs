@@ -476,7 +476,7 @@ instance Arbitrary CoDelegationMap where
 
 instance Arbitrary Delegations where
     arbitrary = D.fromList <$> arb
-    shrink    = gshrink
+    shrink    = fmap D.fromList . gshrink . D.toList
 
 instance Arbitrary AulaData where
     arbitrary = garbitrary
