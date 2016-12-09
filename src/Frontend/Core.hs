@@ -56,6 +56,7 @@ module Frontend.Core
     , formPageHandlerWithoutCsrf
     , form
     , cancelButton
+    , cancelButton'
 
       -- * frames
     , Frame(..), frameBody, frameUser, frameMessages
@@ -666,8 +667,12 @@ form formHandler = getH :<|> postH
         when csrfRequired $ checkCsrfToken csrfToken
         (redirectOf page &&& formMessage page result) <$> processor result
 
+-- FIXME: we might want to use cancelButton' directly.
+cancelButton' :: (FormPage p, Monad m) => p -> FormPageResult p -> HtmlT m ()
+cancelButton' p r = a_ [class_ "btn", href_ $ redirectOf p r] "Abbrechen"
+
 cancelButton :: (FormPage p , () ~ FormPageResult p, Monad m) => p -> HtmlT m ()
-cancelButton p = a_ [class_ "btn", href_ $ redirectOf p ()] "Abbrechen"
+cancelButton p = cancelButton' p ()
 
 
 -- * frame creation
