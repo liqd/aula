@@ -151,6 +151,7 @@ module Persistent.Pure
     , editIdea
     , deleteIdea
     , deleteTopic
+    , moveIdeaLocation
     , moveIdeaToTopic
     , deleteComment
     , saveDurations
@@ -716,11 +717,12 @@ moveIdeasToLocation ideaIds newloc = do
         moveIdea ideaId (const newloc)
     return $ catMaybes result
 
+moveIdeaLocation :: MoveIdea -> IdeaLocation -> IdeaLocation
+moveIdeaLocation MoveIdeaToWild      s = IdeaLocationSpace (s ^. ideaLocationSpace)
+moveIdeaLocation (MoveIdeaToTopic t) s = IdeaLocationTopic (s ^. ideaLocationSpace) t
+
 moveIdeaToTopic :: AUID Idea -> MoveIdea -> AUpdate ()
-moveIdeaToTopic ideaId mTopicId = moveIdea ideaId (changeTopic mTopicId)
-  where
-    changeTopic MoveIdeaToWild      s = IdeaLocationSpace (s ^. ideaLocationSpace)
-    changeTopic (MoveIdeaToTopic t) s = IdeaLocationTopic (s ^. ideaLocationSpace) t
+moveIdeaToTopic ideaId mTopicId = moveIdea ideaId (moveIdeaLocation mTopicId)
 
 setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
 setTopicPhase tid phase = withTopic tid . topicPhase .= phase

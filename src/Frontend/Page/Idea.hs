@@ -69,6 +69,7 @@ import Persistent
     , findTopicsBySpace
     , getIdeaStats
     , ideaReachedQuorum
+    , moveIdeaLocation
     )
 
 import qualified Action (createIdea, editIdea, moveIdeaToTopic)
@@ -517,9 +518,10 @@ createOrEditIdea eLocIdea v form p =
 
 instance FormPage MoveIdea where
     type FormPagePayload MoveIdea = Types.MoveIdea
+    type FormPageResult  MoveIdea = Maybe Types.MoveIdea
 
-    formAction mi   = U.moveIdea $ mi ^. miIdea
-    redirectOf mi _ = U.viewIdea $ mi ^. miIdea
+    formAction mi    = U.moveIdea $ mi ^. miIdea
+    redirectOf mi mt = U.viewIdea $ mi ^. miIdea & ideaLocation %~ maybe id moveIdeaLocation mt
 
     makeForm (MoveIdea _ idea topics) =
         maybe MoveIdeaToWild MoveIdeaToTopic
@@ -538,7 +540,7 @@ instance FormPage MoveIdea where
         DF.inputSelect "topic-to-move" v
         div_ [class_ "form-footer"] $ do
           DF.inputSubmit "Verschieben"
-          cancelButton mi
+          cancelButton' mi Nothing
 
 commentIdeaNote :: Note Idea
 commentIdeaNote = Note
@@ -707,7 +709,7 @@ moveIdea ideaId =
         (do (ctx, idea) <- ideaCapCtx ideaId
             topics <- equery $ findTopicsBySpace (idea ^. ideaLocation . ideaLocationSpace)
             pure $ MoveIdea ctx idea topics)
-        (Action.moveIdeaToTopic ideaId)
+        (\mi -> Action.moveIdeaToTopic ideaId mi $> Just mi)
         "The Idee wurde verschoben."
 
 reportIdea :: ActionM m => AUID Idea -> FormPageHandler m ReportIdea
