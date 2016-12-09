@@ -543,7 +543,7 @@ instance ToHtml AdminViewClasses where
                 tbody_ $ case classes of
                     []  -> tr_ $ td_ [class_ "container-not-found"] "(Keine Einträge.)"
                     _:_ -> forM_ classes $ \clss -> tr_ $ do
-                        td_ $ clss ^. className . html
+                        td_ $ clss ^. className . unClassName . html
                         td_ $ toHtmlRaw nbsp
                         td_ $ a_ [href_ $ U.adminEditClass clss] "bearbeiten"
         where
@@ -589,7 +589,7 @@ chooseRole mr = DF.choice roleSelectionChoices (mr ^? _Just . roleSelection)
 chooseClass :: [SchoolClass] -> Maybe SchoolClass -> DfForm SchoolClass
 chooseClass classes = DF.choice classValues
   where
-    classValues = (id &&& toHtml . view className) <$> classes
+    classValues = (id &&& toHtml . view (className . unClassName)) <$> classes
 
 roleForm :: Maybe Role -> Maybe SchoolClass -> [SchoolClass] -> DfForm Role
 roleForm mrole mclass classes =
@@ -688,11 +688,11 @@ instance FormPage AdminEditClass where
     type FormPagePayload AdminEditClass = ClassName
     type FormPageResult  AdminEditClass = ClassName
     formAction (AdminEditClass schoolClss _)     = U.adminEditClass schoolClss
-    redirectOf (AdminEditClass schoolClss _) new = U.adminEditClass (schoolClss & className .~ (new ^. unClassName))
-    makeForm (AdminEditClass schoolClss _) = classnameF (Just (ClassName $ schoolClss ^. className))
+    redirectOf (AdminEditClass schoolClss _) new = U.adminEditClass (schoolClss & className .~ new)
+    makeForm (AdminEditClass schoolClss _) = classnameF (Just (schoolClss ^. className))
     formPage v form p@(AdminEditClass schoolClss users) =
         adminFrame p . semanticDiv p $ do
-            div_ . h1_ [class_ "admin-main-heading"] $ schoolClss ^. className . html
+            div_ . h1_ [class_ "admin-main-heading"] $ schoolClss ^. className . unClassName . html
             div_ [class_ "container-info"] $ do
                 form $ do
                     DF.inputText "classname" v
@@ -788,7 +788,7 @@ adminEditClass clss = formPageHandlerCalcMsg
     (AdminEditClass clss <$> (makeUserView <$$> query (getUsersInClass clss)))
     (\new -> update (RenameClass clss new) $> new)
     (\(AdminEditClass old _) (ClassName new) _ ->
-        ST.unwords ["Klasse", old ^. className, "wurde in", new, "umbenannt."])
+        ST.unwords ["Klasse", old ^. className . unClassName, "wurde in", new, "umbenannt."])
 
 data AdminDeleteUserPayload = AdminDeleteUserPayload
   deriving (Eq, Show)
@@ -895,7 +895,7 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
             Left msg      -> throwError500 $ "csv parsing FAILED: " <> cs msg
                                              -- FIXME: status code?
             Right records -> do
-                let schoolcl = SchoolClass theOnlySchoolYearHack clname
+                let schoolcl = SchoolClass theOnlySchoolYearHack (ClassName clname)
                 update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
                 forM_ records . p . Set.singleton . Student $ Just schoolcl
 

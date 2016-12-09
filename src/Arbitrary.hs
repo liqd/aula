@@ -96,6 +96,7 @@ import qualified Data.Tree as Tree
 
 import Access
 import Config
+import Data.Delegation as D
 import Data.PasswordTokens
 import Data.UriPath hiding ((</>))
 import Logger.EventLog
@@ -104,7 +105,7 @@ import Frontend.Filter
 import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
-import Frontend.Prelude (view, set, (^.), over, (.~), (%~), (&))
+import Frontend.Prelude (set, (^.), over, (.~), (%~), (&))
 import Persistent
 import Types
 
@@ -453,6 +454,34 @@ instance Arbitrary PageAdminTermsOfUsePayload where
     arbitrary = PageAdminTermsOfUsePayload <$> arb
     shrink (PageAdminTermsOfUsePayload x) = PageAdminTermsOfUsePayload <$> shr x
 
+instance Arbitrary Settings where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary v => Arbitrary (Delegatee v) where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary v => Arbitrary (Delegate v) where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary DelegationMap where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary CoDelegationMap where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary Delegations where
+    arbitrary = D.fromList <$> arb
+    shrink    = fmap D.fromList . gshrink . D.toList
+
+instance Arbitrary AulaData where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
 -- * idea
 
 instance Arbitrary ProtoIdea where
@@ -661,8 +690,7 @@ instance Arbitrary SchoolClass where
     shrink x  = dropWhileX x schoolClasses
 
 schoolClasses :: [SchoolClass]
-schoolClasses = SchoolClass <$> [theOnlySchoolYearHack]
-                            <*> (view unClassName <$> classNames)
+schoolClasses = SchoolClass <$> [theOnlySchoolYearHack] <*> classNames
 
 instance Arbitrary ProtoTopic where
     arbitrary =
@@ -849,8 +877,6 @@ instance Arbitrary InitialPasswordsCsv where
 instance Arbitrary CsvUserRecord where
     arbitrary = garbitrary
     shrink    = gshrink
-
--- FIXME: instance Arbitrary Delegation
 
 instance Arbitrary PhaseChangeDir where
     arbitrary = garbitrary

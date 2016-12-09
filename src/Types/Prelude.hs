@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds             #-}
+{-# LANGUAGE DeriveDataTypeable          #-}
 {-# LANGUAGE DeriveGeneric               #-}
 {-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
@@ -18,6 +19,7 @@ where
 import Control.Lens hiding ((<.>))
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Data.Char
+import Data.Data (Data)
 import Data.Function (on)
 import Data.List as List (sortBy)
 import Data.Monoid
@@ -26,6 +28,7 @@ import Data.SafeCopy (base, deriveSafeCopy)
 import Data.String.Conversions
 import Data.Time
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
+import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
 import Servant ((:~>)(Nat))
 import System.Directory (getDirectoryContents)
@@ -132,7 +135,7 @@ type URL = ST
 -- * time
 
 newtype Timestamp = Timestamp { unTimestamp :: UTCTime }
-  deriving (Eq, Ord, Generic)
+  deriving (Eq, Ord, Generic, Typeable, Data)
 
 timestampToEpoch :: Timestamp -> Integer
 timestampToEpoch = round . utcTimeToPOSIXSeconds . unTimestamp
@@ -144,7 +147,7 @@ data Timespan =  -- FIXME: import this from thentos?  create a package thentos-b
   | TimespanMins  Integer
   | TimespanHours Integer
   | TimespanDays  Integer
-  deriving (Eq, Ord, Show, Read, Generic)
+  deriving (Eq, Ord, Show, Read, Generic, Typeable, Data)
 
 instance SOP.Generic Timestamp
 instance SOP.Generic Timespan

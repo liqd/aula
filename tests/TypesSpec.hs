@@ -5,8 +5,7 @@
 
 module TypesSpec where
 
-import Data.Maybe (isJust, isNothing)
-import Data.Monoid ((<>))
+import Data.Data.Lens (template)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldNotBe)
 import Test.QuickCheck (property)
 
@@ -15,8 +14,12 @@ import qualified Data.Aeson as Aeson
 
 import Arbitrary ()
 import AulaTests (tag, TestSuite(..))
+import AulaPrelude
+import Persistent.Pure
 import Types
 
+renameInData :: Data a => (ClassName -> ClassName) -> a -> a
+renameInData = over $ template . className
 
 spec :: Spec
 spec = do
@@ -52,3 +55,8 @@ spec = do
                 \(dn :: DelegationNetwork) -> length (show dn) `shouldNotBe` 0
             it "aeson-encodes" . property $
                 \(dn :: DelegationNetwork) -> LBS.length (Aeson.encode dn) `shouldNotBe` 0
+
+    describe "Renaming classes" $ do
+        it "works" . property $ \(d :: AulaData) ->
+            let f cl = cl & unClassName <>~ "TEST" in
+            renameInAulaData f d `shouldBe` renameInData f d

@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE DataKinds                   #-}
 {-# LANGUAGE DefaultSignatures           #-}
+{-# LANGUAGE DeriveDataTypeable          #-}
 {-# LANGUAGE DeriveGeneric               #-}
 {-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE FlexibleInstances           #-}
@@ -29,6 +30,7 @@ where
 import Data.CaseInsensitive
 import Control.Lens
 import Data.Binary
+import Data.Data
 import Data.List ((\\))
 import Data.Maybe (catMaybes)
 import Data.SafeCopy (deriveSafeCopy, base)
@@ -43,7 +45,7 @@ import qualified Text.HTML.Parser as HTML
 
 
 newtype Document = Markdown { unMarkdown :: ST }
-  deriving (Eq, Ord, Show, Read, Generic)
+  deriving (Eq, Ord, Show, Read, Generic, Typeable, Data)
 
 instance Binary Document
 
@@ -110,6 +112,6 @@ instance Monoid Document where
 
 
 newtype PlainDocument = PlainDocument { unDescription :: ST }
-  deriving (Eq, Ord, Show, Read, Generic, Monoid)
+  deriving (Eq, Ord, Show, Read, Generic, Monoid, Typeable, Data)
 
 deriveSafeCopy 0 'base ''PlainDocument

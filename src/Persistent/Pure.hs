@@ -1,4 +1,6 @@
 {-# LANGUAGE ConstraintKinds             #-}
+{-# LANGUAGE DeriveDataTypeable          #-}
+{-# LANGUAGE DeriveGeneric               #-}
 {-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GADTs                       #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
@@ -172,6 +174,7 @@ import Control.Monad (foldM, unless, when, replicateM, forM, forM_, filterM)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid (UpdateEvent, EventState, EventResult)
+import Data.Data (Data)
 import Data.Foldable (find, for_)
 import Data.Functor
 import Data.Functor.Infix ((<$$>))
@@ -183,6 +186,7 @@ import Data.Set.Lens
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Tree
 import Data.Typeable (Typeable, typeRep)
+import GHC.Generics (Generic)
 import Servant
 import Servant.Missing (ThrowError500(..))
 
@@ -190,6 +194,7 @@ import qualified Data.Acid as Acid
 import qualified Data.Map  as Map
 import qualified Data.Set  as Set
 import qualified Data.Text as ST
+import qualified Generics.SOP as SOP
 
 import Types
 import LifeCycle (freezePhase)
@@ -211,7 +216,9 @@ data AulaData = AulaData
     , _dbSettings            :: Settings
     , _dbLastId              :: Integer
     }
-  deriving (Eq, Show, Read, Typeable)
+  deriving (Eq, Show, Read, Typeable, Generic, Data)
+
+instance SOP.Generic AulaData
 
 makeLenses ''AulaData
 
@@ -544,20 +551,17 @@ setUserLogin uid login = do
 
 type RenameIn a = (ClassName -> ClassName) -> a -> a
 
-renameInSchoolClass :: RenameIn SchoolClass
-renameInSchoolClass f cl = cl & className . from _ClassName %~ f
-
 renameInAulaData :: RenameIn AulaData
 renameInAulaData f aulaData =
     aulaData
-        & dbSpaceSet . setmapped . ideaSpaceSchoolClass %~ renameInSchoolClass f
+        & dbSpaceSet . setmapped . ideaSpaceSchoolClass . className %~ f
         & dbIdeaMap  . each %~ renameInIdea f
-        & dbUserMap  . each . userRoleSet . setmapped . roleSchoolClass . _Just %~ renameInSchoolClass f
-        & dbTopicMap . each . topicIdeaSpace . ideaSpaceSchoolClass %~ renameInSchoolClass f
+        & dbUserMap  . each . userRoleSet . setmapped . roleSchoolClass . _Just . className %~ f
+        & dbTopicMap . each . topicIdeaSpace . ideaSpaceSchoolClass . className %~ f
         & dbDelegations %~ renameDelegations (renameInDScope f)
 
 renameInCommentKey :: RenameIn CommentKey
-renameInCommentKey f = ckIdeaLocation . ideaLocationSpace . ideaSpaceSchoolClass %~ renameInSchoolClass f
+renameInCommentKey f = ckIdeaLocation . ideaLocationSpace . ideaSpaceSchoolClass . className %~ f
 
 renameInComment :: RenameIn Comment
 renameInComment f comment = comment
@@ -567,15 +571,15 @@ renameInComment f comment = comment
 
 renameInIdea :: RenameIn Idea
 renameInIdea f idea = idea
-    & ideaLocation . ideaLocationSpace . ideaSpaceSchoolClass %~ renameInSchoolClass f
+    & ideaLocation . ideaLocationSpace . ideaSpaceSchoolClass . className %~ f
     & ideaComments . each %~ renameInComment f
 
 renameInDScope :: RenameIn DScope
-renameInDScope f = dScopeIdeaSpace . ideaSpaceSchoolClass %~ renameInSchoolClass f
+renameInDScope f = dScopeIdeaSpace . ideaSpaceSchoolClass . className %~ f
 
 classNameIsAvailable :: ClassName -> Query Bool
-classNameIsAvailable (ClassName cl') =
-    asks (not . elemOf (dbSpaceSet . folded . ideaSpaceSchoolClass . className) cl')
+classNameIsAvailable cl =
+    asks (not . elemOf (dbSpaceSet . folded . ideaSpaceSchoolClass . className) cl)
 
 checkClassNameIsAvailable :: ClassName -> AUpdate ()
 checkClassNameIsAvailable cl = do
@@ -584,10 +588,10 @@ checkClassNameIsAvailable cl = do
 
 renameClass :: SchoolClass -> ClassName -> AUpdate ()
 renameClass (SchoolClass _ old) new
-    | ClassName old == new = pure ()
-    | otherwise = do
+    | old == new = pure ()
+    | otherwise  = do
         checkClassNameIsAvailable new
-        modify . renameInAulaData $ \x -> if x == ClassName old then new else x
+        modify . renameInAulaData $ \x -> if x == old then new else x
 
 addUserRole :: AUID User -> Role -> AUpdate ()
 addUserRole uid role_ = withUser uid . userRoleSet %= Set.insert role_
