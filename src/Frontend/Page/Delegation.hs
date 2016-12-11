@@ -109,7 +109,7 @@ instance FormPage PageDelegateVote where
                 div_ [class_ "button-group clearfix"] $ do
                     unless (null options') $
                         DF.inputSubmit "beauftragen"
-                    cancelButton p
+                    cancelButton p ()
 
 pageDelegateVoteSuccessMsg :: ActionM m => t -> PageDelegationVotePayload -> u -> m ST
 pageDelegateVoteSuccessMsg _ (PageDelegationVotePayload Nothing)    _ =

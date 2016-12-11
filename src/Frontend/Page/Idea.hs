@@ -540,7 +540,7 @@ instance FormPage MoveIdea where
         DF.inputSelect "topic-to-move" v
         div_ [class_ "form-footer"] $ do
           DF.inputSubmit "Verschieben"
-          cancelButton' mi Nothing
+          cancelButton mi Nothing
 
 commentIdeaNote :: Note Idea
 commentIdeaNote = Note

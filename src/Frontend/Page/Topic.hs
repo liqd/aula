@@ -343,7 +343,7 @@ instance FormPage EditTopic where
             h1_ [class_ "main-heading"] "Thema bearbeiten"
             form $ createOrEditTopic v (et ^. etIdeasStats)
             footer_ [class_ "form-footer"] $
-                cancelButton et
+                cancelButton et ()
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> idea ^. _Id . showed . csi
