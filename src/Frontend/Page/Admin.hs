@@ -707,9 +707,9 @@ instance FormPage AdminEditClass where
                     DF.inputText "classname" v
                 DF.inputSubmit "Klasse umbenennen"
             hr_ []
-            div_ [class_ "admin-delete-class"] $ do
+            div_ [class_ "container-info"] $ do
                 p_ "In dieser Klasse leben:"
-                ul_ [style_ "list-style: initial;"] $ do -- TODO styling
+                ul_ [] $ do
                     li_ . fromString . unwords $ [show (s ^. ideasCount), "wilde Ideen und Ideen in Themen."]
                     li_ . fromString . unwords $ [show (s ^. topicsCount), "Themen."]
                     li_ . fromString . unwords $ [show (s ^. studentsCount), "Schüler."]
