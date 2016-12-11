@@ -808,7 +808,7 @@ instance Ord IdeaSpace where
 instance HasUILabel IdeaSpace where
     uilabel = \case
         SchoolSpace    -> "Schule"
-        (ClassSpace c) -> "Klasse " <> uilabel c
+        ClassSpace c   -> uilabel c
 
 instance HasUriPart IdeaSpace where
     uriPart = fromString . ideaSpaceCode

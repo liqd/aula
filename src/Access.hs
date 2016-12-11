@@ -63,6 +63,7 @@ import Control.Lens
 import Data.Maybe
 import Data.Monoid
 import Data.String.Conversions
+import Data.Set.Lens (setOf)
 import Data.Typeable
 import GHC.Generics (Generic)
 
@@ -172,7 +173,7 @@ thereIsAGod nope = if isThere then [minBound..] else nope
 capabilities :: CapCtx -> [Capability]
 capabilities (CapCtx u ms mp mi mc mup mdt)
     | not . checkSpace ms $ rs ^. each . roleScope = []
-    | otherwise = mconcat . mconcat $
+    | otherwise = filter afterthought . mconcat . mconcat $
     [ userCapabilities <$> rs
     , [ ideaCapabilities (u ^. _Id) r i p    | r <- rs, i <- l mi, p <- l mp ]
     , [ commentCapabilities (u ^. _Id) r c p | r <- rs, c <- l mc, p <- l mp ]
@@ -183,6 +184,15 @@ capabilities (CapCtx u ms mp mi mc mup mdt)
   where
     rs = u ^.. userRoles
     l  = maybeToList
+
+    studentClasses = ClassesScope (setOf (each . _Student . _Just) rs)
+    votingCaps = [CanVote, CanLike]
+
+    -- Remove 'CanVote'/'CanLike' *iff* the user has 'Moderator', but no membership of the
+    -- 'SchoolClass' from 'CapCtx'.
+    afterthought :: Capability -> Bool
+    afterthought cap =
+        not (cap `elem` votingCaps && Moderator `elem` rs && not (checkSpace ms studentClasses))
 
 
 -- ** Delegation capabilities
