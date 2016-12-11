@@ -708,16 +708,16 @@ instance FormPage AdminEditClass where
                 DF.inputSubmit "Klasse umbenennen"
             hr_ []
             div_ [class_ "admin-delete-class"] $ do
-                p_ "Deleting this class would have the following effects:" -- TODO translation (and below as well)
+                p_ "In dieser Klasse leben:"
                 ul_ [style_ "list-style: initial;"] $ do -- TODO styling
-                    li_ . fromString . unwords $ ["Destroy", show (s ^. ideasCount), "ideas (all topics taken together)."]
-                    li_ . fromString . unwords $ ["Destroy", show (s ^. topicsCount), "topics."]
-                    li_ . fromString . unwords $ ["Deprive", show (s ^. studentsCount), "users from the student role in that class."]
-                    li_ . fromString . unwords $ ["Deprive", show (s ^. guestsCount), "users from the class guest role in that class."]
+                    li_ . fromString . unwords $ [show (s ^. ideasCount), "wilde Ideen und Ideen in Themen."]
+                    li_ . fromString . unwords $ [show (s ^. topicsCount), "Themen."]
+                    li_ . fromString . unwords $ [show (s ^. studentsCount), "Schüler."]
+                    li_ . fromString . unwords $ [show (s ^. guestsCount), "Gäste der Klasse."]
                 postButton_ [ class_ "btn-cta"
-                            , jsRedirectOnClickConfirm "Are you sure?" (absoluteUriPath $ U.relPath U.adminViewClasses)
+                            , jsRedirectOnClickConfirm "Bist du sicher?" (absoluteUriPath $ U.relPath U.adminViewClasses)
                             ]
-                            (U.adminDeleteClass schoolClss) "Delete class"
+                            (U.adminDeleteClass schoolClss) "Klasse löschen!"
             hr_ []
             div_ $ a_ [class_ "admin-buttons", href_ . U.adminDlPass $ schoolClss]
                 "Passwort-Liste"
