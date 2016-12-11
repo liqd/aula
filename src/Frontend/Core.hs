@@ -666,8 +666,8 @@ form formHandler = getH :<|> postH
         when csrfRequired $ checkCsrfToken csrfToken
         (redirectOf page &&& formMessage page result) <$> processor result
 
-cancelButton :: (FormPage p , () ~ FormPageResult p, Monad m) => p -> HtmlT m ()
-cancelButton p = a_ [class_ "btn", href_ $ redirectOf p ()] "Abbrechen"
+cancelButton :: (FormPage p, Monad m) => p -> FormPageResult p -> HtmlT m ()
+cancelButton p r = a_ [class_ "btn", href_ $ redirectOf p r] "Abbrechen"
 
 
 -- * frame creation

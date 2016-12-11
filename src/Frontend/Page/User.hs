@@ -488,7 +488,7 @@ instance FormPage EditUserProfile where
                         inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
                     footer_ [class_ "form-footer"] $ do
                         DF.inputSubmit "Änderungen speichern"
-                        cancelButton p
+                        cancelButton p ()
 
 validateImageFile :: (Monad n, ActionM m) => Maybe FilePath -> m (DF.Result (HtmlT n ()) (Maybe DynamicImage))
 validateImageFile = \case

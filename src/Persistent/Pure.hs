@@ -151,6 +151,7 @@ module Persistent.Pure
     , editIdea
     , deleteIdea
     , deleteTopic
+    , moveIdeaToLocation
     , moveIdeaToTopic
     , deleteComment
     , saveDurations
@@ -172,6 +173,7 @@ module Persistent.Pure
     , fixComment
     , fixIdea
     , fixAulaData
+    , fixAulaDataUpdate
     )
 where
 
@@ -701,6 +703,9 @@ ideaChangedLocation i f t = if f == t
     then Nothing
     else Just $ IdeaChangedLocation i f t
 
+moveIdea :: AUID Idea -> (IdeaLocation -> IdeaLocation) -> AUpdate ()
+moveIdea ideaId updateLoc = withIdea ideaId %= fixIdea . (ideaLocation %~ updateLoc)
+
 moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate [IdeaChangedLocation]
 moveIdeasToLocation ideaIds newloc = do
     result <- forM ideaIds $ \ideaId -> do
@@ -709,15 +714,15 @@ moveIdeasToLocation ideaIds newloc = do
                   (idea ^? ideaLocation . ideaLocationTopicId)
                   (newloc ^? ideaLocationTopicId)
     for_ ideaIds $ \ideaId ->
-        withIdea ideaId . ideaLocation .= newloc
+        moveIdea ideaId (const newloc)
     return $ catMaybes result
 
+moveIdeaToLocation :: MoveIdea -> IdeaLocation -> IdeaLocation
+moveIdeaToLocation MoveIdeaToWild      s = IdeaLocationSpace (s ^. ideaLocationSpace)
+moveIdeaToLocation (MoveIdeaToTopic t) s = IdeaLocationTopic (s ^. ideaLocationSpace) t
+
 moveIdeaToTopic :: AUID Idea -> MoveIdea -> AUpdate ()
-moveIdeaToTopic ideaId mTopicId =
-    withIdea ideaId . ideaLocation %= changeTopic mTopicId
-  where
-    changeTopic MoveIdeaToWild      s = IdeaLocationSpace (s ^. ideaLocationSpace)
-    changeTopic (MoveIdeaToTopic t) s = IdeaLocationTopic (s ^. ideaLocationSpace) t
+moveIdeaToTopic ideaId mTopicId = moveIdea ideaId (moveIdeaToLocation mTopicId)
 
 setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
 setTopicPhase tid phase = withTopic tid . topicPhase .= phase
@@ -1220,5 +1225,7 @@ fixIdea idea = idea & ideaComments . each %~ fixComment (idea ^. ideaLocation)
 fixAulaData :: AulaData -> AulaData
 fixAulaData = dbIdeaMap . each %~ fixIdea
 
+fixAulaDataUpdate :: AUpdate ()
+fixAulaDataUpdate = modify fixAulaData
 
 makeLenses ''IdeaChangedLocation

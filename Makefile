@@ -89,6 +89,11 @@ content-deleg:
 	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-delegations
 	rm -f cookie-jar
 
+fix-content:
+	make content-login
+	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/fix
+	rm -f cookie-jar
+
 tags: .phony
 	hasktags -b src/ tests/ exec/ dist/build/autogen/
 

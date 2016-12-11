@@ -52,6 +52,7 @@ should write a capability 'ComeFromLocalhost' instead?)
 
 type ManageStateApi =
        "wipe"        :> PostJ NeedAdmin ()
+  :<|> "fix"         :> PostJ NeedAdmin ()
   :<|> "create-init" :> PostJ NeedEmptyUserMap ()
   :<|> "create-demo" :> PostJ NeedAdmin ()
   :<|> "create-votes" :> PostJ NeedAdmin ()
@@ -61,6 +62,7 @@ type ManageStateApi =
 manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
        runPostHandler (pure NeedAdmin) (update WipeIdeasAndTopics)
+  :<|> runPostHandler (pure NeedAdmin) (update FixAulaDataUpdate)
   :<|> runPostHandler (pure NeedEmptyUserMap) genInitialTestDb
   :<|> runPostHandler (pure NeedAdmin) (void (mkUniverse defaultUniverseSize))
   :<|> runPostHandler (pure NeedAdmin) genVotingPhaseTopic
