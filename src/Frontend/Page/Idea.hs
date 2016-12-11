@@ -69,7 +69,7 @@ import Persistent
     , findTopicsBySpace
     , getIdeaStats
     , ideaReachedQuorum
-    , moveIdeaLocation
+    , moveIdeaToLocation
     )
 
 import qualified Action (createIdea, editIdea, moveIdeaToTopic)
@@ -521,7 +521,7 @@ instance FormPage MoveIdea where
     type FormPageResult  MoveIdea = Maybe Types.MoveIdea
 
     formAction mi    = U.moveIdea $ mi ^. miIdea
-    redirectOf mi mt = U.viewIdea $ mi ^. miIdea & ideaLocation %~ maybe id moveIdeaLocation mt
+    redirectOf mi mt = U.viewIdea $ mi ^. miIdea & ideaLocation %~ maybe id moveIdeaToLocation mt
 
     makeForm (MoveIdea _ idea topics) =
         maybe MoveIdeaToWild MoveIdeaToTopic
