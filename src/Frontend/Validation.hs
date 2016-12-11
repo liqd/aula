@@ -243,6 +243,7 @@ classnameF mcl =
     "classname" .: DF.validateM chk (ClassName <$> Frontend.Validation.validate "Klasse" classnameV
                                                             (DF.text (mcl ^? _Just . unClassName)))
   where
+    chk "Schule" = pure $ DF.Error "Klassenname ist bereits vergeben"
     chk cl = do
         isAvailable <- query $ classNameIsAvailable cl
         pure $ if isAvailable then DF.Success cl else DF.Error "Klassenname ist bereits vergeben"
