@@ -100,7 +100,7 @@ module Persistent.Pure
     , classNameIsAvailable
     , renameClass
     , filterClasses
-    , deleteClass
+    , destroyClassPure
     , destroyClass
     , addUserRole
     , remUserRole
@@ -632,11 +632,11 @@ filterClasses p d = d
     filterRole x | allOf _Just p x = x
                  | otherwise       = Nothing
 
-deleteClass :: SchoolClass -> AulaData -> AulaData
-deleteClass clss = filterClasses (/= clss)
+destroyClassPure :: SchoolClass -> AulaData -> AulaData
+destroyClassPure clss = filterClasses (/= clss)
 
 destroyClass :: SchoolClass -> AUpdate ()
-destroyClass = modify . deleteClass
+destroyClass = modify . destroyClassPure
 
 addUserRole :: AUID User -> Role -> AUpdate ()
 addUserRole uid role_ = withUser uid . userRoleSet %= Set.insert role_

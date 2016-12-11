@@ -75,7 +75,7 @@ spec = do
 
     describe "Destroying classes" $ do
         it "does nothing when the class does not exist" . property $ \(d :: AulaData) ->
-            deleteClass (SchoolClass 0 (ClassName "DOES NOT EXIST")) d `shouldBe` d
+            destroyClassPure (SchoolClass 0 (ClassName "DOES NOT EXIST")) d `shouldBe` d
 
         it "does nothing when any class matches" . property $ \(d :: AulaData) ->
             filterClasses (const True) d `shouldBe` d
@@ -84,6 +84,6 @@ spec = do
             let d = d' & dbSpaceSet .~ Set.fromList (ClassSpace <$> schoolClasses)
                        & fixAulaData
                 classNames = setOf (template . unClassName) in
-            classNames (deleteClass clss d)
+            classNames (destroyClassPure clss d)
                 `shouldBe`
             ((clss ^. className . unClassName) `Set.delete` classNames d)
