@@ -69,18 +69,18 @@ spec = do
             fixAulaData d' `shouldBe` d'
 
     describe "Renaming classes" $ do
-        it "works" . property $ \d ->
+        it "works" . property $ \(d :: AulaData) ->
             let f cl = cl & unClassName <>~ "TEST" in
             renameInAulaData f d `shouldBe` renameInData f d
 
     describe "Destroying classes" $ do
-        it "does nothing when the class does not exist" . property $ \d ->
+        it "does nothing when the class does not exist" . property $ \(d :: AulaData) ->
             deleteClass (SchoolClass 0 (ClassName "DOES NOT EXIST")) d `shouldBe` d
 
-        it "does nothing when any class matches" . property $ \d ->
+        it "does nothing when any class matches" . property $ \(d :: AulaData) ->
             filterClasses (const True) d `shouldBe` d
 
-        it "removes any occurrence of this class" . property $ \d' clss ->
+        it "removes any occurrence of this class" . property $ \(d' :: AulaData) clss ->
             let d = d' & dbSpaceSet .~ Set.fromList (ClassSpace <$> schoolClasses)
                        & fixAulaData
                 classNames = setOf (template . unClassName) in
