@@ -66,6 +66,7 @@ module Persistent.Pure
     , findIdeasByTopicId
     , findIdeasByTopic
     , findIdeasByUserId
+    , findIdeasBySpace
     , findWildIdeasBySpace
     , findComment
     , findComment'
@@ -98,6 +99,9 @@ module Persistent.Pure
     , checkClassNameIsAvailable
     , classNameIsAvailable
     , renameClass
+    , filterClasses
+    , destroyClassPure
+    , destroyClass
     , addUserRole
     , remUserRole
     , resetUserPass
@@ -122,6 +126,7 @@ module Persistent.Pure
     , dbQuorums
     , dbFreeze
     , dbUserMap
+    , dbSpaceSet
     , addDelegation
     , withdrawDelegation
     , delegationScopeForest
@@ -163,6 +168,10 @@ module Persistent.Pure
     , aulaUserLogins
 
     , renameInAulaData
+
+    , fixComment
+    , fixIdea
+    , fixAulaData
     )
 where
 
@@ -180,6 +189,7 @@ import Data.Functor
 import Data.Functor.Infix ((<$$>))
 import Data.List (nub)
 import Data.Maybe
+import Data.Map (Map)
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.Set.Lens
@@ -227,6 +237,12 @@ type AulaGetter a = Getter AulaData a
 type AulaSetter a = Setter' AulaData a
 type AulaTraversal a = Traversal' AulaData a
 
+noDeletedIdeas :: [Idea] -> [Idea]
+noDeletedIdeas  = filter (not . view ideaDeleted)
+
+noDeletedTopics :: [Topic] -> [Topic]
+noDeletedTopics = filter (not . view topicDeleted)
+
 dbSpaces :: AulaGetter [IdeaSpace]
 dbSpaces = dbSpaceSet . to Set.elems
 
@@ -237,7 +253,7 @@ dbUsers :: AulaGetter [User]
 dbUsers = dbUserMap . to Map.elems
 
 dbTopics :: AulaGetter [Topic]
-dbTopics = dbTopicMap . to Map.elems . to (filter (not . _topicDeleted))
+dbTopics = dbTopicMap . to Map.elems . to noDeletedTopics
 
 dbSnapshot :: AulaGetter AulaData
 dbSnapshot = to id
@@ -593,6 +609,35 @@ renameClass (SchoolClass _ old) new
         checkClassNameIsAvailable new
         modify . renameInAulaData $ \x -> if x == old then new else x
 
+-- @filterInMapBy f p m@
+-- In the map @m@, keep only the bindings for which all the targets of the fold @f@ satisfify
+-- the predicate @p@.
+filterInMapBy :: Fold a b -> (b -> Bool) -> Map k a -> Map k a
+filterInMapBy selector predicate = Map.filter (allOf selector predicate)
+
+-- @filterInSetBy f p s@
+-- In the set @m@, keep only the elements for which all the targets of the fold @f@ satisfify
+-- the predicate @p@.
+filterInSetBy :: Fold a b -> (b -> Bool) -> Set a -> Set a
+filterInSetBy selector predicate = Set.filter (allOf selector predicate)
+
+filterClasses :: (SchoolClass -> Bool) -> AulaData -> AulaData
+filterClasses p d = d
+    & dbSpaceSet    %~ filterInSetBy ideaSpaceSchoolClass                                       p
+    & dbIdeaMap     %~ filterInMapBy (ideaLocation . ideaLocationSpace . ideaSpaceSchoolClass)  p
+    & dbTopicMap    %~ filterInMapBy (topicIdeaSpace . ideaSpaceSchoolClass)                    p
+    & dbDelegations %~ filterDelegationsByScope (allOf (dScopeIdeaSpace . ideaSpaceSchoolClass) p)
+    & dbUserMap . each . userRoleSet . setmapped . roleSchoolClass %~ filterRole
+  where
+    filterRole x | allOf _Just p x = x
+                 | otherwise       = Nothing
+
+destroyClassPure :: SchoolClass -> AulaData -> AulaData
+destroyClassPure clss = filterClasses (/= clss)
+
+destroyClass :: SchoolClass -> AUpdate ()
+destroyClass = modify . destroyClassPure
+
 addUserRole :: AUID User -> Role -> AUpdate ()
 addUserRole uid role_ = withUser uid . userRoleSet %= Set.insert role_
 
@@ -847,7 +892,7 @@ findTopicBy :: Eq a => Fold Topic a -> a -> MQuery Topic
 findTopicBy = findInBy dbTopics
 
 findTopicsBySpace :: IdeaSpace -> Query [Topic]
-findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
+findTopicsBySpace = fmap noDeletedTopics . findAllInBy dbTopics topicIdeaSpace
 
 findIdeasByTopicId :: AUID Topic -> Query [Idea]
 findIdeasByTopicId tid = do
@@ -857,10 +902,16 @@ findIdeasByTopicId tid = do
         Just t  -> findIdeasByTopic t
 
 findIdeasByTopic :: Topic -> Query [Idea]
-findIdeasByTopic = fmap (filter (not . view ideaDeleted)) . findAllInBy dbIdeas ideaLocation . topicIdeaLocation
+findIdeasByTopic = fmap noDeletedIdeas . findAllInBy dbIdeas ideaLocation . topicIdeaLocation
 
 findWildIdeasBySpace :: IdeaSpace -> Query [Idea]
-findWildIdeasBySpace space = filter (not . view ideaDeleted) <$> findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
+findWildIdeasBySpace = fmap noDeletedIdeas . findAllInBy dbIdeas ideaLocation . IdeaLocationSpace
+
+-- This includes:
+-- * the wild ideas
+-- * the ideas in topic
+findIdeasBySpace :: IdeaSpace -> Query [Idea]
+findIdeasBySpace = fmap noDeletedIdeas . findAllInBy dbIdeas (ideaLocation . ideaLocationSpace)
 
 findComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> MQuery Comment
 findComment' iid parents = preview . dbComment' iid parents
@@ -1156,6 +1207,18 @@ dangerousResetAulaData = put emptyAulaData
 
 dangerousRenameAllLogins :: ST -> AUpdate ()
 dangerousRenameAllLogins suffix = aulaUserLogins . _UserLogin <>= suffix
+
+fixComment :: IdeaLocation -> Comment -> Comment
+fixComment loc comment = comment
+    & commentMeta . metaKey . ckIdeaLocation .~ loc
+    & commentVotes . each . commentVoteMeta . metaKey . cvCommentKey . ckIdeaLocation .~ loc
+    & commentReplies . each %~ fixComment loc
+
+fixIdea :: Idea -> Idea
+fixIdea idea = idea & ideaComments . each %~ fixComment (idea ^. ideaLocation)
+
+fixAulaData :: AulaData -> AulaData
+fixAulaData = dbIdeaMap . each %~ fixIdea
 
 
 makeLenses ''IdeaChangedLocation

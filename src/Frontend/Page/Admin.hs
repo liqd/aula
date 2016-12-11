@@ -43,12 +43,13 @@ import Persistent.Api
     , AddUserRole(AddUserRole)
     , RemUserRole(RemUserRole)
     , RenameClass(RenameClass)
+    , DestroyClass(DestroyClass)
     , SetTermsOfUse(SetTermsOfUse)
     )
 import Persistent
     ( dbDurations, dbQuorums, dbFreeze, loginIsAvailable, getUserViews, getSchoolClasses
-    , findActiveUser, getUsersInClass, findActiveUser, getSpaces, getUsersInClass
-    , termsOfUse
+    , findActiveUser, getUsersInClass, findActiveUser, getSpaces
+    , termsOfUse, findIdeasBySpace, findTopicsBySpace, findUsersByRole, Query
     )
 import Frontend.Prelude
 import Frontend.Validation hiding (tab, spaces)
@@ -136,7 +137,15 @@ instance Page AdminCreateClass where
     isAuthorized   = adminPage
     isResponsive _ = False
 
-data AdminEditClass = AdminEditClass SchoolClass [UserView]
+data ClassScopeStats = ClassScopeStats
+    { _ideasCount, _topicsCount, _studentsCount, _guestsCount :: Int }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic ClassScopeStats
+
+makeLenses ''ClassScopeStats
+
+data AdminEditClass = AdminEditClass SchoolClass [UserView] ClassScopeStats
   deriving (Eq, Show, Read)
 
 instance Page AdminEditClass where
@@ -687,18 +696,32 @@ instance FormPage AdminEditUser where
 instance FormPage AdminEditClass where
     type FormPagePayload AdminEditClass = ClassName
     type FormPageResult  AdminEditClass = ClassName
-    formAction (AdminEditClass schoolClss _)     = U.adminEditClass schoolClss
-    redirectOf (AdminEditClass schoolClss _) new = U.adminEditClass (schoolClss & className .~ new)
-    makeForm (AdminEditClass schoolClss _) = classnameF (Just (schoolClss ^. className))
-    formPage v form p@(AdminEditClass schoolClss users) =
+    formAction (AdminEditClass schoolClss _ _)     = U.adminEditClass schoolClss
+    redirectOf (AdminEditClass schoolClss _ _) new = U.adminEditClass (schoolClss & className .~ new)
+    makeForm (AdminEditClass schoolClss _ _) = classnameF (Just (schoolClss ^. className))
+    formPage v form p@(AdminEditClass schoolClss users s) =
         adminFrame p . semanticDiv p $ do
             div_ . h1_ [class_ "admin-main-heading"] $ schoolClss ^. className . unClassName . html
             div_ [class_ "container-info"] $ do
                 form $ do
                     DF.inputText "classname" v
                 DF.inputSubmit "Klasse umbenennen"
+            hr_ []
+            div_ [class_ "container-info"] $ do
+                p_ "In dieser Klasse leben:"
+                ul_ [] $ do
+                    li_ . fromString . unwords $ [show (s ^. ideasCount), "wilde Ideen und Ideen in Themen."]
+                    li_ . fromString . unwords $ [show (s ^. topicsCount), "Themen."]
+                    li_ . fromString . unwords $ [show (s ^. studentsCount), "Schüler."]
+                    li_ . fromString . unwords $ [show (s ^. guestsCount), "Gäste der Klasse."]
+                postButton_ [ class_ "btn-cta"
+                            , jsRedirectOnClickConfirm "Bist du sicher?" (absoluteUriPath $ U.relPath U.adminViewClasses)
+                            ]
+                            (U.adminDeleteClass schoolClss) "Klasse löschen!"
+            hr_ []
             div_ $ a_ [class_ "admin-buttons", href_ . U.adminDlPass $ schoolClss]
                 "Passwort-Liste"
+            hr_ []
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ nil
@@ -783,12 +806,25 @@ fromRoleSelection RoleSelModerator   = const Moderator
 fromRoleSelection RoleSelPrincipal   = const Principal
 fromRoleSelection RoleSelAdmin       = const Admin
 
+classScopeStats :: SchoolClass -> Query ClassScopeStats
+classScopeStats clss =
+    ClassScopeStats
+        <$> (length <$> findIdeasBySpace spc)
+        <*> (length <$> findTopicsBySpace spc)
+        <*> (length <$> findUsersByRole (Student (Just clss)))
+        <*> (length <$> findUsersByRole (ClassGuest (Just clss)))
+  where
+    spc = ClassSpace clss
+
 adminEditClass :: ActionPersist m => SchoolClass -> FormPageHandler m AdminEditClass
 adminEditClass clss = formPageHandlerCalcMsg
-    (AdminEditClass clss <$> (makeUserView <$$> query (getUsersInClass clss)))
+    (query (AdminEditClass clss <$> (makeUserView <$$> getUsersInClass clss) <*> classScopeStats clss))
     (\new -> update (RenameClass clss new) $> new)
-    (\(AdminEditClass old _) (ClassName new) _ ->
+    (\(AdminEditClass old _ _) (ClassName new) _ ->
         ST.unwords ["Klasse", old ^. className . unClassName, "wurde in", new, "umbenannt."])
+
+adminDestroyClass :: ActionM m => SchoolClass -> m ()
+adminDestroyClass = update . DestroyClass
 
 data AdminDeleteUserPayload = AdminDeleteUserPayload
   deriving (Eq, Show)

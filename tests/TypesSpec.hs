@@ -5,14 +5,16 @@
 
 module TypesSpec where
 
+import Data.Set.Lens (setOf)
 import Data.Data.Lens (template)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldNotBe)
 import Test.QuickCheck (property)
 
-import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Set as Set
 
-import Arbitrary ()
+import Arbitrary (schoolClasses)
 import AulaTests (tag, TestSuite(..))
 import AulaPrelude
 import Persistent.Pure
@@ -56,7 +58,32 @@ spec = do
             it "aeson-encodes" . property $
                 \(dn :: DelegationNetwork) -> LBS.length (Aeson.encode dn) `shouldNotBe` 0
 
+    describe "Fixing AulaData" $ do
+        it "is should not remove any Timestamp value" . property $ \d ->
+            let d' = fixAulaData d
+                len = lengthOf (template :: Traversal' AulaData Timestamp) in
+            len d' `shouldBe` len d
+
+        it "is idempotent" . property $ \d ->
+            let d' = fixAulaData d in
+            fixAulaData d' `shouldBe` d'
+
     describe "Renaming classes" $ do
         it "works" . property $ \(d :: AulaData) ->
             let f cl = cl & unClassName <>~ "TEST" in
             renameInAulaData f d `shouldBe` renameInData f d
+
+    describe "Destroying classes" $ do
+        it "does nothing when the class does not exist" . property $ \(d :: AulaData) ->
+            destroyClassPure (SchoolClass 0 (ClassName "DOES NOT EXIST")) d `shouldBe` d
+
+        it "does nothing when any class matches" . property $ \(d :: AulaData) ->
+            filterClasses (const True) d `shouldBe` d
+
+        it "removes any occurrence of this class" . property $ \(d' :: AulaData) clss ->
+            let d = d' & dbSpaceSet .~ Set.fromList (ClassSpace <$> schoolClasses)
+                       & fixAulaData
+                classNames = setOf (template . unClassName) in
+            classNames (destroyClassPure clss d)
+                `shouldBe`
+            ((clss ^. className . unClassName) `Set.delete` classNames d)

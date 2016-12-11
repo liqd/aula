@@ -122,6 +122,7 @@ module Frontend.Path
     , adminCreateUser
     , adminEditClass
     , adminDeleteUser
+    , adminDeleteClass
     , adminDlPass
     , adminTopicNextPhase
     , adminTopicVotingPrevPhase
@@ -452,6 +453,7 @@ data AdminMode (r :: AllowedMethod) =
   | AdminViewUsers (Maybe UsersQuery)
   | AdminCreateClass
   | AdminEditClass SchoolClass
+  | AdminDeleteClass SchoolClass
   | AdminViewClasses (Maybe ClassesFilterQuery)
   | AdminEvent
   | AdminDlPass SchoolClass
@@ -476,6 +478,9 @@ adminEditClass = Admin . AdminEditClass
 
 adminDeleteUser :: User -> Main 'AllowGetPost
 adminDeleteUser = Admin . AdminDeleteUser . view _Id
+
+adminDeleteClass :: SchoolClass -> Main 'AllowPost
+adminDeleteClass = Admin . AdminDeleteClass
 
 adminDlPass :: SchoolClass -> Main 'AllowGetPost
 adminDlPass = Admin . AdminDlPass
@@ -511,23 +516,24 @@ adminTermsOfUse :: Main 'AllowGetPost
 adminTermsOfUse = Admin AdminTermsOfUse
 
 adminMode :: AdminMode r -> UriPath -> UriPath
-adminMode AdminDuration         path = path </> "duration"
-adminMode AdminQuorum           path = path </> "quorum"
-adminMode AdminFreeze           path = path </> "freeze"
-adminMode (AdminViewUsers mq)   path = renderFilter mq $ path </> "users"
-adminMode AdminCreateUser       path = path </> "user" </> "create"
-adminMode (AdminAddRole uid)    path = path </> "user" </> uriPart uid </> "role" </> "add"
-adminMode (AdminRemRole uid r)  path = path </> "user" </> uriPart uid </> "role" </> uriPart r </> "delete"
-adminMode (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
-adminMode (AdminDeleteUser uid) path = path </> "user" </> uriPart uid </> "delete"
-adminMode (AdminViewClasses mq) path = renderFilter mq $ path </> "classes"
-adminMode AdminCreateClass      path = path </> "class" </> "create"
-adminMode (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
-adminMode AdminEvent            path = path </> "event"
-adminMode (AdminDlPass clss)    path = path </> "downloads" </> "passwords" </> uriPart clss
-adminMode (AdminDlEvents mspc)  path = path </> "downloads" </> "events"
-                                       </?> ("space", cs . toUrlPiece <$> mspc)
-adminMode (AdminTopicNextPhase tid) path = path </> "topic" </> uriPart tid </> "next-phase"
+adminMode AdminDuration                   path = path </> "duration"
+adminMode AdminQuorum                     path = path </> "quorum"
+adminMode AdminFreeze                     path = path </> "freeze"
+adminMode (AdminViewUsers mq)             path = renderFilter mq $ path </> "users"
+adminMode AdminCreateUser                 path = path </> "user" </> "create"
+adminMode (AdminAddRole uid)              path = path </> "user" </> uriPart uid </> "role" </> "add"
+adminMode (AdminRemRole uid r)            path = path </> "user" </> uriPart uid </> "role" </> uriPart r </> "delete"
+adminMode (AdminEditUser uid)             path = path </> "user" </> uriPart uid </> "edit"
+adminMode (AdminDeleteUser uid)           path = path </> "user" </> uriPart uid </> "delete"
+adminMode (AdminViewClasses mq)           path = renderFilter mq $ path </> "classes"
+adminMode AdminCreateClass                path = path </> "class" </> "create"
+adminMode (AdminEditClass clss)           path = path </> "class" </> uriPart clss </> "edit"
+adminMode (AdminDeleteClass clss)         path = path </> "class" </> uriPart clss </> "delete"
+adminMode AdminEvent                      path = path </> "event"
+adminMode (AdminDlPass clss)              path = path </> "downloads" </> "passwords" </> uriPart clss
+adminMode (AdminDlEvents mspc)            path = path </> "downloads" </> "events"
+                                                 </?> ("space", cs . toUrlPiece <$> mspc)
+adminMode (AdminTopicNextPhase tid)       path = path </> "topic" </> uriPart tid </> "next-phase"
 adminMode (AdminTopicVotingPrevPhase tid) path = path </> "topic" </> uriPart tid </> "voting-prev-phase"
 adminMode AdminChangePhase                path = path </> "change-phase"
 adminMode (AdminResetPassword uid)        path = path </> "user" </> uriPart uid </> "reset-pwd"
@@ -746,6 +752,7 @@ isPostOnly = \case
           AdminTopicNextPhase _       -> True
           AdminTopicVotingPrevPhase _ -> True
           AdminRemRole{}              -> True
+          AdminDeleteClass{}          -> True
           _                           -> False
     UserProf _ m ->
       case m of
