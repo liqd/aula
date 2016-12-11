@@ -1,6 +1,16 @@
 -*- mode: text -*-
 
 
+Thu Oct 21 01:23:13 CEST 2016 v0.33.0..v0.32.0
+
+ - #1001: full-text search for ideas.
+ - #1002: rename and delete idea spaces.
+ - #1015: students should not be allowed to vote in classes where they are just visiting as moderators.
+ - #1004: do not write "Klasse" in front of class names.
+ - #1006: initial passwords should not contain spaces.
+ - Fix several minor issues.
+
+
 Thu Oct 21 01:23:13 CEST 2016 v0.32.0..v0.31.0
 
  - #999: better sanity checks for class names, allow dashes in class names.
