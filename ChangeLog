@@ -1,6 +1,13 @@
 -*- mode: text -*-
 
 
+Thu Oct 21 01:23:13 CEST 2016 v0.33.0..v0.33.1
+
+ - fix migration issue
+ - fix bug in html form for school class renaming.
+ - fix bug in shutdown script.
+
+
 Thu Oct 21 01:23:13 CEST 2016 v0.33.0..v0.32.0
 
  - #1001: full-text search for ideas.
