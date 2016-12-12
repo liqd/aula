@@ -14,7 +14,7 @@ for i in `ls $AULA_ROOT_PATH/run`; do
     pidfile=$AULA_ROOT_PATH/run/$i
     pid=`cat $pidfile`
     echo -n " $pid"
-    kill $pid || echo "(pid file must have been stale)"
+    kill -INT $pid || echo "(pid file must have been stale)"
     while (ps -ax | grep '^\s*'$pid | grep -q 'aula-server$'); do
         echo -n '.'; sleep 0.42
     done
