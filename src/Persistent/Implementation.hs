@@ -5,8 +5,6 @@
 module Persistent.Implementation (mkRunPersist, withPersist, withPersist')
 where
 
-import Debug.Trace
-
 import Config
 import Control.Exception (finally)
 import Control.Lens
@@ -26,7 +24,7 @@ withPersist' cfg mkRunP m = do
     let logger = unSendLogMsg (aulaLog (cfg ^. logging)) . LogEntry INFO . cs
     rp@(RunPersist desc _ _ close) <- mkRunP  -- initialization happens here
     logger $ "persistence: " <> desc
-    m rp `finally` (trace "triggering persist close." close)  -- closing happens here
+    m rp `finally` close  -- closing happens here
 
 mkRunPersist :: Config -> IO RunPersist
 mkRunPersist cfg =
