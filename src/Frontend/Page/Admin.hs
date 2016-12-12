@@ -705,7 +705,7 @@ instance FormPage AdminEditClass where
             div_ [class_ "container-info"] $ do
                 form $ do
                     DF.inputText "classname" v
-                DF.inputSubmit "Klasse umbenennen"
+                    DF.inputSubmit "Klasse umbenennen"
             hr_ []
             div_ [class_ "container-info"] $ do
                 p_ "In dieser Klasse leben:"
