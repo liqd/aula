@@ -262,6 +262,7 @@ library
       Types.Instances.SafeCopy
       Types.Instances.SOP
       Types.Log
+      Types.Old
       Types.Prelude
       Types.Util
   other-modules:
