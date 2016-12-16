@@ -635,7 +635,7 @@ newtype ReportCommentContent = ReportCommentContent
 reportCommentNote :: Note ()
 reportCommentNote = Note
     { noteHeaderText                = const "Verbesserungsvorschlag melden"
-    , noteExplanation               = Just "Hier kannst einen Verbesserungsvorschlag wegen eines verletzenden oder anstößigen Inhalts beim Moderationsteam melden. Das Team erhält eine Benachrichtigung und wird den Verbesserungsvorschlag schnellstmöglich überprüfen. Bitte gib unten einen Grund an, warum du den Inhalt für anstößig oder verletzend hältst."
+    , noteExplanation               = Just "Hier kannst du einen Verbesserungsvorschlag wegen eines verletzenden oder anstößigen Inhalts beim Moderationsteam melden. Das Team erhält eine Benachrichtigung und wird den Verbesserungsvorschlag schnellstmöglich überprüfen. Bitte gib unten einen Grund an, warum du den Inhalt für anstößig oder verletzend hältst."
     , noteLabelText                 = "Was möchtest du melden?"
     , noteFieldNameInValiationError = "Bemerkung"
     }
@@ -656,7 +656,7 @@ instance FormPage ReportComment where
 reportIdeaNote :: Note Idea
 reportIdeaNote = Note
     { noteHeaderText                = ("Die Idee " <>) . (<> " melden") . view ideaTitle
-    , noteExplanation               = Just "Hier kannst eine Idee wegen eines verletzenden oder anstößigen Inhalts beim Moderationsteam melden. Das Team erhält eine Benachrichtigung und wird die Idee schnellstmöglich überprüfen. Bitte gib unten einen Grund an, warum du den Inhalt für anstößig oder verletzend hältst."
+    , noteExplanation               = Just "Hier kannst du eine Idee wegen eines verletzenden oder anstößigen Inhalts beim Moderationsteam melden. Das Team erhält eine Benachrichtigung und wird die Idee schnellstmöglich überprüfen. Bitte gib unten einen Grund an, warum du den Inhalt für anstößig oder verletzend hältst."
     , noteLabelText                 = "Was möchtest du melden?"
     , noteFieldNameInValiationError = "Bemerkung"
     }
