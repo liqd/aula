@@ -3,7 +3,6 @@
     --package aeson
     --package conduit-combinators
     --package mtl
-    --package safe
     --package servant
     --package string-conversions
     --package wreq
@@ -16,20 +15,16 @@
     -XStandaloneDeriving
     -XViewPatterns
 
-    -Wall -fno-warn-name-shadowing -fno-warn-unused-imports
+    -Wall -Werror -fno-warn-name-shadowing
 -}
 
 import           Conduit
-import           Control.Applicative
 import           Control.Exception
 import           Control.Monad
 import           Data.Attoparsec.ByteString as P
 import           Data.Conduit.Combinators (stdin)
-import           Data.Either
 import           Data.String.Conversions
-import           Data.Typeable
-import           Safe
-import           Servant.API
+import qualified Data.Text as ST
 import           System.Environment
 import           System.Exit
 import           System.Process
@@ -95,17 +90,34 @@ mailgunSend email = do
   let baseArgs = [ "--server", "smtp.mailgun.org", "--silent"
                  , "--auth", "--protocol", "SSMTP", "--tls-on-connect", "--tls-verify"
                  , "--au", mailgunUser, "--ap", mailgunPass
-                 , "--from", cs hfrom, "--to", cs hto
+                 , "--h-X-Mailgun-Native-Send:", "true"
                  ]
-      hdrArgs = mconcat $ (\(EmailHeader k v) -> ["--h-" <> cs k <> ":", cs v]) <$> _emailHeaders email
-      bdyArgs = ["--body", cs $ _emailBody email]
 
-      args = baseArgs <> hdrArgs <> bdyArgs
+      args = baseArgs
+          <> mailgunHeaderArgs (_emailHeaders email)
+          <> mailgunHeaderArgs (aulaUnsubscribeHeader email)
+          <> ["--from", cs hfrom, "--to", cs hto]
+          <> ["--body", cs $ _emailBody email]
 
   exitValue <- runProcess "/usr/bin/swaks" args Nothing Nothing Nothing Nothing Nothing >>= waitForProcess
   case exitValue of
     ExitSuccess -> pure ()
     bad -> throwIO . ErrorCall $ "mailgunSend exited with " <> show bad
+
+mailgunHeaderArgs :: [EmailHeader] -> [String]
+mailgunHeaderArgs = mconcat . fmap (\(EmailHeader k v) -> ["--h-" <> cs k <> ":", cs v])
+
+aulaUnsubscribeHeader :: Email -> [EmailHeader]
+aulaUnsubscribeHeader = ST.lines . _emailBody >=> finddomain >=> pure . mkheader
+  where
+    finddomain = chopPrefix "Diese email wurde automatisch von " >=> chopSuffix " erstellt=2E"
+    mkheader dom = (EmailHeader "List-Unsubscribe" $ dom </> "user/settings")
+      where
+        a </> b = if "/" `ST.isSuffixOf` a then a <> b else a <> "/" <> b
+
+chopPrefix, chopSuffix :: ST -> ST -> [ST]
+chopPrefix p l = case ST.splitAt (ST.length p) l of (p', l') -> if p' == p then [l'] else []
+chopSuffix p = fmap ST.reverse . chopPrefix (ST.reverse p) . ST.reverse
 
 
 -- * aux
