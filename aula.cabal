@@ -31,8 +31,10 @@ data-files:
     docs/testing.md
     null-terms-of-use.md
     README.md
+    scripts/mailgun.hs
     scripts/run.sh
     scripts/shutdown.sh
+    scripts/wipe.sh
     static/css/all.css
     static/css/all.css.map
     static/d3-aula.css
