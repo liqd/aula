@@ -386,7 +386,7 @@ addWithCurrentUser_ :: (HasAUpdate ev a, ActionAddDb m, ActionLog m) => (EnvWith
 addWithCurrentUser_ addA protoA = void $ addWithCurrentUser addA protoA
 
 -- | Returns the current user
-currentUser :: (ActionSessionLog m, ActionPersist m, ActionUserHandler m) => m User
+currentUser :: (ActionSessionLog m, ActionPersist m) => m User
 currentUser = do
     uid <- currentUserId
     muser <- query (findUser uid)
@@ -718,51 +718,27 @@ deleteTopic = update . DeleteTopic
 deleteIdeaComment :: CommentKey -> ActionPersist m => m ()
 deleteIdeaComment = update . DeleteComment
 
-pathToURI :: ActionSendMail m => U.Main 'U.AllowGetPost -> m ST
+pathToURI :: MonadReaderConfig r m => U.Main 'U.AllowGetPost -> m ST
 pathToURI path = do
     cfg <- viewConfig
     pure $ (cfg ^. exposedUrl . csi) <> absoluteUriPath (relPath path)
-
-reportIdea :: AUID Idea -> Document -> ActionM m => m ()
-reportIdea ideaId doc = do
-    idea <- mquery $ findIdea ideaId
-    uri  <- pathToURI $ U.viewIdea idea
-    sendMailToRole Moderator EmailMessage
-        { _msgSubjectLabel = idea ^. ideaLocation . ideaLocationSpace . to IdeaSpaceSubject
-        , _msgSubjectText  = "Problematische Idee."
-        , _msgBody = ST.unlines
-            [ "Liebe Moderatoren,"
-            , ""
-            , "Eine Idee wurde als problematisch gemeldet:"
-            , ""
-            , "    " <> uri
-                -- FIXME: do we want to send urls by email?  phishing and all?
-            , ""
-            , ""
-            , cs $ unMarkdown doc
-            , ""
-            , "hochachtungsvoll,"
-            , "Ihr Aula-Benachrichtigungsdienst"
-            ]
-        , _msgHtml = Nothing -- Not supported yet
-        }
 
 -- FIXME:
 -- More generally: do we do anything to prevent abuse of the report system?
 -- One thing could be log the event or count the reports made by one user.
 -- Since no record of the report are kept in base not only multiple users can
 -- report the same comment but the same user can report multiple times.
-reportCommentById :: CommentKey -> Document -> (ActionPersist m, ActionSendMail m) => m ()
-reportCommentById ck doc = do
-    comment <- mquery $ findComment ck
-    uri     <- pathToURI $ U.viewComment comment
+someReport :: (ActionSendMail m, ActionSessionLog m, ActionPersist m)
+    => U.Main 'U.AllowGetPost -> EmailSubjectLabel -> ST -> ST -> Document -> m ()
+someReport path label subjectText bodyLine doc = do
+    uri  <- pathToURI path
     sendMailToRole Moderator EmailMessage
-        { _msgSubjectLabel = comment ^. _Key . ckIdeaLocation . ideaLocationSpace . to IdeaSpaceSubject
-        , _msgSubjectText  = "Problematischer Verbesserungsvorschlag."
+        { _msgSubjectLabel = label
+        , _msgSubjectText  = subjectText
         , _msgBody = ST.unlines
             [ "Liebe Moderatoren,"
             , ""
-            , "Ein Verbesserungsvorschlag wurde als problematisch gemeldet:"
+            , bodyLine
             , ""
             , "    " <> uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
@@ -776,29 +752,25 @@ reportCommentById ck doc = do
         , _msgHtml = Nothing -- Not supported yet
         }
 
-reportUser :: ActionM m => AUID User -> Document -> m ()
+reportIdea :: (ActionSessionLog m, ActionPersist m, ActionSendMail m) => AUID Idea -> Document -> m ()
+reportIdea ideaId doc = do
+    idea <- mquery $ findIdea ideaId
+    someReport (U.viewIdea idea) (idea ^. ideaLocation . ideaLocationSpace . to IdeaSpaceSubject)
+        "Problematische Idee." "Eine Idee wurde als problematisch gemeldet:" doc
+
+reportCommentById :: CommentKey -> Document -> (ActionSessionLog m, ActionPersist m, ActionSendMail m) => m ()
+reportCommentById ck doc = do
+    comment <- mquery $ findComment ck
+    someReport (U.viewComment comment)
+        (comment ^. _Key . ckIdeaLocation . ideaLocationSpace . to IdeaSpaceSubject)
+        "Problematischer Verbesserungsvorschlag."
+        "Ein Verbesserungsvorschlag wurde als problematisch gemeldet:" doc
+
+reportUser :: (ActionSessionLog m, ActionPersist m, ActionSendMail m) => AUID User -> Document -> m ()
 reportUser uid doc = do
     user <- mquery $ findUser uid
-    uri <- pathToURI $ U.viewUserProfile user
-    sendMailToRole Moderator EmailMessage
-        { _msgSubjectLabel = user ^. userLogin . to UserLoginSubject
-        , _msgSubjectText  = "Problematisches Nutzerprofil."
-        , _msgBody = ST.unlines
-            [ "Liebe Moderatoren,"
-            , ""
-            , "Ein Nutzerprofil wurde als problematisch gemeldet:"
-            , ""
-            , "    " <> uri
-                -- FIXME: do we want to send urls by email?  phishing and all?
-            , ""
-            , ""
-            , cs $ unMarkdown doc
-            , ""
-            , "hochachtungsvoll,"
-            , "Ihr Aula-Benachrichtigungsdienst"
-            ]
-        , _msgHtml = Nothing -- Not supported yet
-        }
+    someReport (U.viewUserProfile user) (user ^. userLogin . to UserLoginSubject)
+        "Problematisches Nutzerprofil." "Ein Nutzerprofil wurde als problematisch gemeldet:" doc
 
 passwordTokenExpires :: Timespan
 passwordTokenExpires = TimespanDays 3
@@ -851,13 +823,13 @@ finalizePasswordViaEmail uid token pwd = do
 -- ASSUMPTION: Idea is in the given idea location.
 reportIdeaComment
     :: IdeaLocation -> AUID Idea -> AUID Comment -> Document
-    -> (ActionPersist m, ActionSendMail m) => m ()
+    -> (ActionSessionLog m, ActionPersist m, ActionSendMail m) => m ()
 reportIdeaComment loc ideaId commentId
     = reportCommentById (CommentKey loc ideaId [] commentId)
 
 reportIdeaCommentReply
     :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> Document
-    -> (ActionPersist m, ActionSendMail m) => m ()
+    -> (ActionSessionLog m, ActionPersist m, ActionSendMail m) => m ()
 reportIdeaCommentReply loc ideaId parentCommentId commentId
     = reportCommentById (CommentKey loc ideaId [parentCommentId] commentId)
 
