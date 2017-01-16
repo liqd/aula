@@ -18,11 +18,15 @@
 module Frontend.Page.Admin
 where
 
+import Codec.Xlsx (fromXlsx, toXlsx, xlSheets, CellValue(CellText))
+import Codec.Xlsx.Templater
 import Control.Arrow ((&&&))
 import Data.Set (Set)
+import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Servant
 
 import qualified Data.Csv as Csv
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
@@ -719,8 +723,10 @@ instance FormPage AdminEditClass where
                             ]
                             (U.adminDeleteClass schoolClss) "Klasse löschen!"
             hr_ []
-            div_ $ a_ [class_ "admin-buttons", href_ . U.adminDlPass $ schoolClss]
-                "Passwort-Liste"
+            div_ $ do
+                "Passwort-Liste "
+                a_ [class_ "admin-buttons", href_ . U.adminDlPassXlsx $ schoolClss] "(XLSX)"
+                a_ [class_ "admin-buttons", href_ . U.adminDlPassCsv  $ schoolClss] "(CSV)"
             hr_ []
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
@@ -1052,6 +1058,8 @@ adminTermsOfUse = formPageHandlerWithMsg
 
 
 -- * csv file handling
+-- TODO CsvUserRecord and InitialPasswordsCsv are also used for XLSX exports so they
+-- could be renamed.
 
 data CsvUserRecord = CsvUserRecord
     { _csvUserRecordFirst       :: UserFirstName
@@ -1061,6 +1069,8 @@ data CsvUserRecord = CsvUserRecord
     , _csvUserRecordInitialPass :: Maybe ST
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+makeLenses ''CsvUserRecord
 
 instance SOP.Generic CsvUserRecord
 
@@ -1132,17 +1142,64 @@ instance MimeRender CSVZIP InitialPasswordsCsv where  -- FIXME: handle null case
 csvUserRecordHeaders :: [String]
 csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Initiales Passwort"]
 
+csvUserRecord :: User -> Maybe CsvUserRecord
+csvUserRecord u =
+    Just $ CsvUserRecord
+            (u ^. userFirstName)
+            (u ^. userLastName)
+            (u ^. userEmail)
+            (Just $ u ^. userLogin)
+            (u ^? userPassword . _UserPassInitial . unInitialPassword)
+{-
+    UserPassInitial (InitialPassword ps) -> Just $ CsvUserRecord
+            (u ^. userFirstName)
+            (u ^. userLastName)
+            (u ^. userEmail)
+            (Just $ u ^. userLogin)
+            (Just ps)
+    _ -> Nothing
+-}
+
 adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (CsvHeaders InitialPasswordsCsv)
 adminInitialPasswordsCsv clss = do
     now <- getCurrentTimestamp
     csvZipHeaders ("Passwortliste " <> clss ^. uilabeled) .
-        InitialPasswordsCsv now . catMaybes . fmap mk <$> query (getUsersInClass clss)
+        InitialPasswordsCsv now . catMaybes . fmap csvUserRecord <$> query (getUsersInClass clss)
+
+
+-- xlsx
+
+newtype InitialPasswordsXlsx = InitialPasswordsXlsx LBS
+    deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic InitialPasswordsXlsx
+
+instance Page InitialPasswordsXlsx where
+    isAuthorized = adminPage
+    isResponsive _ = False
+
+instance MimeRender XLSX InitialPasswordsXlsx where
+    mimeRender Proxy (InitialPasswordsXlsx x) = x
+
+adminInitialPasswordsXlsx :: ActionM m => SchoolClass -> m InitialPasswordsXlsx
+adminInitialPasswordsXlsx clss = do
+    now <- (utcTimeToPOSIXSeconds . unTimestamp) <$> getCurrentTimestamp
+    tplFile <- readTempFile "static-src/initial-passwords.xlsx"
+    tplData <- g . map f . catMaybes . fmap csvUserRecord <$> query (getUsersInClass clss)
+    pure . InitialPasswordsXlsx . fromXlsx now . setSheetName . applyTemplateOnXlsx tplData $
+        toXlsx tplFile
   where
-    mk u = case u ^. userPassword of
-        UserPassInitial (InitialPassword ps) -> Just $ CsvUserRecord
-              (u ^. userFirstName)
-              (u ^. userLastName)
-              (u ^. userEmail)
-              (Just $ u ^. userLogin)
-              (Just ps)
-        _ -> Nothing
+    setSheetName = xlSheets . each . _1 .~ clss ^. uilabeled
+    g :: [TemplateDataRow] -> [(TemplateDataRow, TemplateSettings, [TemplateDataRow])]
+    g rows = [( Map.empty -- Here goes a map with global placeholders, we don't have any yet (classname ?)
+              , TemplateSettings Rows 0 -- We repeat the row 1
+              , rows
+              )]
+    f :: CsvUserRecord -> TemplateDataRow
+    f u = Map.fromList
+            [ ("firstname", CellText $ u ^. csvUserRecordFirst . _UserFirstName)
+            , ("lastname",  CellText $ u ^. csvUserRecordLast  . _UserLastName)
+            , ("email",     CellText $ u ^. csvUserRecordEmail . _Just . re emailAddress)
+            , ("login",     CellText $ u ^. csvUserRecordLogin . _Just . _UserLogin)
+            , ("password",  CellText $ u ^. csvUserRecordInitialPass . _Just)
+            ]

@@ -650,6 +650,14 @@ zipLbs now fname content =
         [Zip.toEntry fname (timestampToEpoch now) content] Nothing ""
 
 
+-- * xlsx helpers
+
+data XLSX
+
+instance Accept XLSX where
+    contentType Proxy = "application" // "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
 -- * misc
 
 newtype DurationDays = DurationDays { unDurationDays :: Int }

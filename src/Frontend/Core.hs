@@ -24,7 +24,7 @@ module Frontend.Core
 
       -- * helpers for routing tables
     , Singular, CaptureData, (::>), Reply, GetResult(..), PostResult(..), PostResult'
-    , GetH, PostH, FormHandler, GetCSV, Redirect
+    , GetH, PostH, FormHandler, GetCSV, GetXLSX, Redirect
 
       -- * helpers for handlers
     , semanticDiv, semanticDiv', semanticDivAttr
@@ -180,6 +180,9 @@ instance SOP.Generic (GetResult a)
 instance MimeRender CSVZIP a => MimeRender CSVZIP (GetResult a) where
     mimeRender p = mimeRender p . fromGetResult
 
+instance MimeRender XLSX a => MimeRender XLSX (GetResult a) where
+    mimeRender p = mimeRender p . fromGetResult
+
 instance MimeRender PlainText a => MimeRender PlainText (GetResult a) where
     mimeRender p = mimeRender p . fromGetResult
 
@@ -222,6 +225,7 @@ type FormHandler p =
   :<|> FormReqBody :> PostH' (Frame (FormPageRep p)) (Frame (FormPageRep p)) -- Redirect
 
 type GetCSV a = Get '[CSVZIP] (GetResult (CsvHeaders a))
+type GetXLSX a = Get '[XLSX] (GetResult a)
 
 instance Page () where
     isAuthorized = publicPage

@@ -7,6 +7,7 @@ resolver: lts-6.3
 packages:
 - '.'
 - submodules/hs-webdriver
+- submodules/xlsx-templater
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
@@ -21,6 +22,7 @@ extra-deps:
 - unordered-containers-0.2.7.0
 - uri-bytestring-0.1.9.2
 - wai-digestive-functors-0.3
+- xlsx-0.4.1
 
 # Override default flag values for local packages and extra-deps
 flags: {}

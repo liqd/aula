@@ -194,6 +194,8 @@ library
     , wai-app-static
     , wai-middleware-metrics
     , warp
+    , xlsx
+    , xlsx-templater
     , yaml
     , zip-archive
   exposed-modules:
@@ -335,6 +337,8 @@ executable aula-avatars
     , wai-app-static
     , wai-middleware-metrics
     , warp
+    , xlsx
+    , xlsx-templater
     , yaml
     , zip-archive
     , aula
@@ -409,6 +413,8 @@ executable aula-html-dummies
     , wai-app-static
     , wai-middleware-metrics
     , warp
+    , xlsx
+    , xlsx-templater
     , yaml
     , zip-archive
     , aula
@@ -486,6 +492,8 @@ executable aula-i18n
     , wai-app-static
     , wai-middleware-metrics
     , warp
+    , xlsx
+    , xlsx-templater
     , yaml
     , zip-archive
     , aula
@@ -562,6 +570,8 @@ executable aula-init-state
     , wai-app-static
     , wai-middleware-metrics
     , warp
+    , xlsx
+    , xlsx-templater
     , yaml
     , zip-archive
     , aula
@@ -636,6 +646,8 @@ executable aula-server
     , wai-app-static
     , wai-middleware-metrics
     , warp
+    , xlsx
+    , xlsx-templater
     , yaml
     , zip-archive
     , aula
@@ -711,6 +723,8 @@ test-suite spec
     , wai-app-static
     , wai-middleware-metrics
     , warp
+    , xlsx
+    , xlsx-templater
     , yaml
     , zip-archive
     , aula
