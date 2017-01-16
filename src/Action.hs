@@ -732,6 +732,7 @@ someReport :: (ActionSendMail m, ActionSessionLog m, ActionPersist m)
     => U.Main 'U.AllowGetPost -> EmailSubjectLabel -> ST -> ST -> Document -> m ()
 someReport path label subjectText bodyLine doc = do
     uri  <- pathToURI path
+    user <- currentUser
     sendMailToRole Moderator EmailMessage
         { _msgSubjectLabel = label
         , _msgSubjectText  = subjectText
@@ -743,6 +744,7 @@ someReport path label subjectText bodyLine doc = do
             , "    " <> uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
+            , userFullName user <> " wrote:" -- TODO
             , ""
             , cs $ unMarkdown doc
             , ""
