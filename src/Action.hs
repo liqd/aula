@@ -746,7 +746,7 @@ someReport path label subjectText bodyLine doc = do
             , ""
             , cs $ unMarkdown doc
             , ""
-            , "Gemeldet von: " <> userFullName user
+            , "Gemeldet von: " <> userLogin user <> "[" <> userFullName user <> "]"
             , ""
             , "hochachtungsvoll,"
             , "Ihr Aula-Benachrichtigungsdienst"
