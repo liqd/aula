@@ -744,9 +744,9 @@ someReport path label subjectText bodyLine doc = do
             , "    " <> uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
-            , userFullName user <> " wrote:" -- TODO
-            , ""
             , cs $ unMarkdown doc
+            , ""
+            , "Gemeldet von: " <> userFullName user
             , ""
             , "hochachtungsvoll,"
             , "Ihr Aula-Benachrichtigungsdienst"
