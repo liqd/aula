@@ -635,14 +635,15 @@ data CSVZIP
 instance Accept CSVZIP where
     contentType Proxy = "application" // "zip"  -- (without zip: "text" // "csv")
 
-type CsvHeaders a = Headers '[CsvHeadersContentDisposition] a
-type CsvHeadersContentDisposition = Header "Content-Disposition" String  -- appease hlint v1.9.22
+type ContentDisposition = "Content-Disposition"  -- appease hlint v1.9.22
+type AttachmentHeaders a = Headers '[Header ContentDisposition String] a
 
-instance MimeRender CSVZIP a => MimeRender CSVZIP (CsvHeaders a) where
+instance MimeRender CSVZIP a => MimeRender CSVZIP (AttachmentHeaders a) where
     mimeRender proxy (Headers v _) = mimeRender proxy v
 
-csvZipHeaders :: String -> a -> CsvHeaders a
-csvZipHeaders filename = addHeader $ "attachment; filename=" <> filename <> ".zip"
+-- FIXME Escaping?
+attachmentHeaders :: String -> a -> AttachmentHeaders a
+attachmentHeaders filename = addHeader $ "attachment; filename=" <> filename
 
 zipLbs :: Timestamp -> FilePath -> LBS -> LBS
 zipLbs now fname content =

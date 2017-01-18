@@ -889,10 +889,10 @@ instance FormPage PageAdminSettingsEventsProtocol where
 adminEventsProtocol :: (ActionM m) => FormPageHandler m PageAdminSettingsEventsProtocol
 adminEventsProtocol = formPageHandler (PageAdminSettingsEventsProtocol <$> query getSpaces) pure
 
-adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m (CsvHeaders EventLog)
-adminEventLogCsv mspc = hdrs . maybe id filterEventLog mspc <$> readEventLog
+adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m (AttachmentHeaders EventLog)
+adminEventLogCsv mspc = attachmentHeaders filename . maybe id filterEventLog mspc <$> readEventLog
   where
-    hdrs = csvZipHeaders $ "EventLog " <> maybe "alle Ideenräume" uilabel mspc
+    filename = "EventLog " <> maybe "alle Ideenräume" uilabel mspc <> ".zip"
 
 
 -- * Classes Create
@@ -1153,10 +1153,10 @@ csvUserRecord u =
         (Just $ u ^. userLogin)
         (u ^? userPassword . _UserPassInitial . unInitialPassword)
 
-adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (CsvHeaders InitialPasswordsCsv)
+adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (AttachmentHeaders InitialPasswordsCsv)
 adminInitialPasswordsCsv clss = do
     now <- getCurrentTimestamp
-    csvZipHeaders ("Passwortliste " <> clss ^. uilabeled) .
+    attachmentHeaders ("Passwortliste " <> clss ^. uilabeled <> ".zip") .
         InitialPasswordsCsv now . fmap csvUserRecord <$> query (getUsersInClass clss)
 
 

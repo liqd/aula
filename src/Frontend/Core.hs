@@ -224,7 +224,7 @@ type FormHandler p =
        GetH (Frame (FormPageRep p))
   :<|> FormReqBody :> PostH' (Frame (FormPageRep p)) (Frame (FormPageRep p)) -- Redirect
 
-type GetCSV a = Get '[CSVZIP] (GetResult (CsvHeaders a))
+type GetCSV a = Get '[CSVZIP] (GetResult (AttachmentHeaders a))
 type GetXLSX a = Get '[XLSX] (GetResult a)
 
 instance Page () where
