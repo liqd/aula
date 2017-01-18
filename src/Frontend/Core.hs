@@ -225,7 +225,7 @@ type FormHandler p =
   :<|> FormReqBody :> PostH' (Frame (FormPageRep p)) (Frame (FormPageRep p)) -- Redirect
 
 type GetCSV a = Get '[CSVZIP] (GetResult (AttachmentHeaders a))
-type GetXLSX a = Get '[XLSX] (GetResult a)
+type GetXLSX a = Get '[XLSX] (GetResult (AttachmentHeaders a))
 
 instance Page () where
     isAuthorized = publicPage

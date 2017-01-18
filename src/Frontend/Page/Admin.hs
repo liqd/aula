@@ -1174,14 +1174,15 @@ instance Page InitialPasswordsXlsx where
 instance MimeRender XLSX InitialPasswordsXlsx where
     mimeRender Proxy (InitialPasswordsXlsx x) = x
 
-adminInitialPasswordsXlsx :: ActionM m => SchoolClass -> m InitialPasswordsXlsx
+adminInitialPasswordsXlsx :: ActionM m => SchoolClass -> m (AttachmentHeaders InitialPasswordsXlsx)
 adminInitialPasswordsXlsx clss = do
     now <- (utcTimeToPOSIXSeconds . unTimestamp) <$> getCurrentTimestamp
     tplFile <- readTempFile "static-src/initial-passwords.xlsx"
     tplData <- g . fmap (f . csvUserRecord) <$> query (getUsersInClass clss)
-    pure . InitialPasswordsXlsx . fromXlsx now . setSheetName . applyTemplateOnXlsx tplData $
-        toXlsx tplFile
+    pure . attachmentHeaders filename . InitialPasswordsXlsx . fromXlsx now
+         . setSheetName . applyTemplateOnXlsx tplData $ toXlsx tplFile
   where
+    filename = "Passwortliste " <> clss ^. uilabeled <> ".xlsx"
     setSheetName = xlSheets . each . _1 .~ clss ^. uilabeled
     g :: [TemplateDataRow] -> [(TemplateDataRow, TemplateSettings, [TemplateDataRow])]
     g rows = [( Map.empty -- Here goes a map with global placeholders, we don't have any yet (classname ?)

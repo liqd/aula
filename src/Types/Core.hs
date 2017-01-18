@@ -658,6 +658,9 @@ data XLSX
 instance Accept XLSX where
     contentType Proxy = "application" // "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
+instance MimeRender XLSX a => MimeRender XLSX (AttachmentHeaders a) where
+    mimeRender proxy (Headers v _) = mimeRender proxy v
+
 
 -- * misc
 
