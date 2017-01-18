@@ -643,7 +643,7 @@ instance MimeRender CSVZIP a => MimeRender CSVZIP (AttachmentHeaders a) where
 
 -- FIXME Escaping?
 attachmentHeaders :: String -> a -> AttachmentHeaders a
-attachmentHeaders filename = addHeader $ "attachment; filename=" <> filename
+attachmentHeaders filename = addHeader $ "attachment; filename=\"" <> filename <> "\""
 
 zipLbs :: Timestamp -> FilePath -> LBS -> LBS
 zipLbs now fname content =
