@@ -1142,29 +1142,20 @@ instance MimeRender CSVZIP InitialPasswordsCsv where  -- FIXME: handle null case
 csvUserRecordHeaders :: [String]
 csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Initiales Passwort"]
 
-csvUserRecord :: User -> Maybe CsvUserRecord
+csvUserRecord :: User -> CsvUserRecord
 csvUserRecord u =
-    Just $ CsvUserRecord
-            (u ^. userFirstName)
-            (u ^. userLastName)
-            (u ^. userEmail)
-            (Just $ u ^. userLogin)
-            (u ^? userPassword . _UserPassInitial . unInitialPassword)
-{-
-    UserPassInitial (InitialPassword ps) -> Just $ CsvUserRecord
-            (u ^. userFirstName)
-            (u ^. userLastName)
-            (u ^. userEmail)
-            (Just $ u ^. userLogin)
-            (Just ps)
-    _ -> Nothing
--}
+    CsvUserRecord
+        (u ^. userFirstName)
+        (u ^. userLastName)
+        (u ^. userEmail)
+        (Just $ u ^. userLogin)
+        (u ^? userPassword . _UserPassInitial . unInitialPassword)
 
 adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (CsvHeaders InitialPasswordsCsv)
 adminInitialPasswordsCsv clss = do
     now <- getCurrentTimestamp
     csvZipHeaders ("Passwortliste " <> clss ^. uilabeled) .
-        InitialPasswordsCsv now . catMaybes . fmap csvUserRecord <$> query (getUsersInClass clss)
+        InitialPasswordsCsv now . fmap csvUserRecord <$> query (getUsersInClass clss)
 
 
 -- xlsx
@@ -1185,7 +1176,7 @@ adminInitialPasswordsXlsx :: ActionM m => SchoolClass -> m InitialPasswordsXlsx
 adminInitialPasswordsXlsx clss = do
     now <- (utcTimeToPOSIXSeconds . unTimestamp) <$> getCurrentTimestamp
     tplFile <- readTempFile "static-src/initial-passwords.xlsx"
-    tplData <- g . map f . catMaybes . fmap csvUserRecord <$> query (getUsersInClass clss)
+    tplData <- g . fmap (f . csvUserRecord) <$> query (getUsersInClass clss)
     pure . InitialPasswordsXlsx . fromXlsx now . setSheetName . applyTemplateOnXlsx tplData $
         toXlsx tplFile
   where
