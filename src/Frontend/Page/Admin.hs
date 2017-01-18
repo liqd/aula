@@ -1130,9 +1130,11 @@ instance Csv.ToRecord CsvUserRecord where
         , ln ^. _UserLastName
         , em ^. _Just . re emailAddress
         , li ^. _Just . _UserLogin
-        , pw ^. _Just
+        , fromMaybe missingInitialPasswordText pw
         ]
 
+missingInitialPasswordText :: ST
+missingInitialPasswordText = "<Passwort geschützt>"
 
 instance MimeRender CSVZIP InitialPasswordsCsv where  -- FIXME: handle null case like with 'EventLog'?
     mimeRender Proxy (InitialPasswordsCsv fileAge rows) = zipLbs fileAge "Passwörter.csv" $
@@ -1192,5 +1194,5 @@ adminInitialPasswordsXlsx clss = do
             , ("lastname",  CellText $ u ^. csvUserRecordLast  . _UserLastName)
             , ("email",     CellText $ u ^. csvUserRecordEmail . _Just . re emailAddress)
             , ("login",     CellText $ u ^. csvUserRecordLogin . _Just . _UserLogin)
-            , ("password",  CellText $ u ^. csvUserRecordInitialPass . _Just)
+            , ("password",  CellText $ fromMaybe missingInitialPasswordText (u ^. csvUserRecordInitialPass))
             ]
