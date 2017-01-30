@@ -62,6 +62,7 @@ module Frontend.Core
     , coreRunHandler
     , runHandler
     , runGetHandler
+    , runGetHandlerWithHeaders
     , runPostHandler
     , completeRegistration
 
@@ -224,8 +225,8 @@ type FormHandler p =
        GetH (Frame (FormPageRep p))
   :<|> FormReqBody :> PostH' (Frame (FormPageRep p)) (Frame (FormPageRep p)) -- Redirect
 
-type GetCSV a = Get '[CSVZIP] (GetResult (AttachmentHeaders a))
-type GetXLSX a = Get '[XLSX] (GetResult (AttachmentHeaders a))
+type GetCSV a = Get '[CSVZIP] (AttachmentHeaders (GetResult a))
+type GetXLSX a = Get '[XLSX] (AttachmentHeaders (GetResult a))
 
 instance Page () where
     isAuthorized = publicPage
@@ -411,6 +412,10 @@ instance Page a => Page (FormReqBody :> a) where
 -- We must not generalize this instance to a `Page (Get c a)` instance.
 instance Page a => Page (Get c (GetResult a)) where
     isAuthorized = error "IMPOSSIBLE: instance Page a => Page (Get c (GetResult a))"
+
+-- We must not generalize this instance to a `Page (Get c a)` instance.
+instance Page a => Page (Get c (Headers h (GetResult a))) where
+    isAuthorized = error "IMPOSSIBLE: instance Page a => Page (Get c (Headers h (GetResult a)))"
 
 -- We must not generalize this instance to a `Page (Get c a)` instance.
 instance Page a => Page (Get c (Frame a)) where
@@ -756,6 +761,13 @@ runGetHandler
        , Page p, Typeable p)
     => m p -> m (GetResult p)
 runGetHandler action = coreRunHandler (\_ -> action) (\_ -> pure . UnsafeGetResult)
+
+-- | Like 'runGetHandler', but handles Headers correctly.
+runGetHandlerWithHeaders
+    :: ( ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, ActionLog m
+       , Page p, Typeable p, Typeable h)
+    => m (Headers h p) -> m (Headers h (GetResult p))
+runGetHandlerWithHeaders action = coreRunHandler (\_ -> action) (\_ x -> pure (UnsafeGetResult <$> x))
 
 -- | Call 'coreRunHandler' on a post handler, and 'Frame' the result.  In contrast to 'runHandler',
 -- this case requires distinguishing between the action that promises not to modify the database
