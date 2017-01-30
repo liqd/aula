@@ -374,14 +374,17 @@ searchBox fld action placehld =
 class Page p where
     isAuthorized :: Applicative m => AccessInput p -> m AccessResult
 
+    -- FIXME: should take a proxy
     extraFooterElems  :: Monad m => p -> HtmlT m ()
     extraFooterElems _ = nil
 
+    -- FIXME: should take a proxy
     extraBodyClasses  :: p -> [ST]
     extraBodyClasses _ = nil
 
     -- | Used in 'pageFrame' below for rendering pages in desktop mode on phones if they do not
     -- support responsive design.  Default is 'True'.
+    -- FIXME: should take a proxy
     isResponsive :: p -> Bool
     isResponsive _ = True
 

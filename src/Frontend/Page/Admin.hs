@@ -1058,8 +1058,7 @@ adminTermsOfUse = formPageHandlerWithMsg
 
 
 -- * csv file handling
--- TODO CsvUserRecord and InitialPasswordsCsv are also used for XLSX exports so they
--- could be renamed.
+-- TODO CsvUserRecord is also used for XLSX exports so it could be renamed.
 
 data CsvUserRecord = CsvUserRecord
     { _csvUserRecordFirst       :: UserFirstName
