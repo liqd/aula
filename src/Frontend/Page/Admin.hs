@@ -1074,7 +1074,7 @@ makeLenses ''CsvUserRecord
 
 instance SOP.Generic CsvUserRecord
 
-data InitialPasswordsCsv = InitialPasswordsCsv Timestamp [CsvUserRecord]
+data InitialPasswordsCsv = InitialPasswordsCsv Timestamp FilePath [CsvUserRecord]
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic InitialPasswordsCsv
@@ -1137,7 +1137,7 @@ missingInitialPasswordText :: ST
 missingInitialPasswordText = "<Passwort geschützt>"
 
 instance MimeRender CSVZIP InitialPasswordsCsv where  -- FIXME: handle null case like with 'EventLog'?
-    mimeRender Proxy (InitialPasswordsCsv fileAge rows) = zipLbs fileAge "Passwörter.csv" $
+    mimeRender Proxy (InitialPasswordsCsv fileAge filePath rows) = zipLbs fileAge filePath $
         cs (intercalate "," csvUserRecordHeaders <> "\n")
         <> Csv.encode rows
 
@@ -1156,8 +1156,11 @@ csvUserRecord u =
 adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (AttachmentHeaders InitialPasswordsCsv)
 adminInitialPasswordsCsv clss = do
     now <- getCurrentTimestamp
-    attachmentHeaders ("Passwortliste " <> clss ^. uilabeled <> ".zip") .
-        InitialPasswordsCsv now . fmap csvUserRecord <$> query (getUsersInClass clss)
+    attachmentHeaders (basename <> ".zip") .
+      InitialPasswordsCsv now (basename <> ".csv") .
+      fmap csvUserRecord <$> query (getUsersInClass clss)
+  where
+    basename = "Passwortliste " <> clss ^. uilabeled
 
 
 -- xlsx
