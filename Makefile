@@ -94,6 +94,21 @@ fix-content:
 	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/fix
 	rm -f cookie-jar
 
+testrenameclass:
+	make content-login
+	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/admin/class/2016-wef-wef-wef/edit
+	rm -f cookie-jar
+
+testcsvclass:
+	make content-login
+	curl -b cookie-jar -O -v $(AULA_MK_CONTENT_URL)/admin/downloads/passwords/2016-wef-wef-wef/csv
+	rm -f cookie-jar
+
+testxlsxclass:
+	make content-login
+	curl -b cookie-jar -O -v $(AULA_MK_CONTENT_URL)/admin/downloads/passwords/2016-wef-wef-wef/xlsx
+	rm -f cookie-jar
+
 tags: .phony
 	hasktags -b src/ tests/ exec/ dist/build/autogen/
 

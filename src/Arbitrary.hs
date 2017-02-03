@@ -878,6 +878,10 @@ instance Arbitrary InitialPasswordsCsv where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary InitialPasswordsXlsx where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
 instance Arbitrary CsvUserRecord where
     arbitrary = garbitrary
     shrink    = gshrink

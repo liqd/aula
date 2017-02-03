@@ -18,11 +18,15 @@
 module Frontend.Page.Admin
 where
 
+import Codec.Xlsx (fromXlsx, toXlsx, xlSheets, CellValue(CellText))
+import Codec.Xlsx.Templater
 import Control.Arrow ((&&&))
 import Data.Set (Set)
+import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Servant
 
 import qualified Data.Csv as Csv
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
@@ -719,8 +723,10 @@ instance FormPage AdminEditClass where
                             ]
                             (U.adminDeleteClass schoolClss) "Klasse löschen!"
             hr_ []
-            div_ $ a_ [class_ "admin-buttons", href_ . U.adminDlPass $ schoolClss]
-                "Passwort-Liste"
+            div_ $ do
+                "Passwort-Liste "
+                a_ [class_ "admin-buttons", href_ . U.adminDlPassXlsx $ schoolClss] "(XLSX)"
+                a_ [class_ "admin-buttons", href_ . U.adminDlPassCsv  $ schoolClss] "(CSV)"
             hr_ []
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
@@ -883,10 +889,10 @@ instance FormPage PageAdminSettingsEventsProtocol where
 adminEventsProtocol :: (ActionM m) => FormPageHandler m PageAdminSettingsEventsProtocol
 adminEventsProtocol = formPageHandler (PageAdminSettingsEventsProtocol <$> query getSpaces) pure
 
-adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m (CsvHeaders EventLog)
-adminEventLogCsv mspc = hdrs . maybe id filterEventLog mspc <$> readEventLog
+adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m (AttachmentHeaders EventLog)
+adminEventLogCsv mspc = attachmentHeaders filename . maybe id filterEventLog mspc <$> readEventLog
   where
-    hdrs = csvZipHeaders $ "EventLog " <> maybe "alle Ideenräume" uilabel mspc
+    filename = "EventLog " <> maybe "alle Ideenräume" uilabel mspc <> ".zip"
 
 
 -- * Classes Create
@@ -1052,6 +1058,7 @@ adminTermsOfUse = formPageHandlerWithMsg
 
 
 -- * csv file handling
+-- TODO CsvUserRecord is also used for XLSX exports so it could be renamed.
 
 data CsvUserRecord = CsvUserRecord
     { _csvUserRecordFirst       :: UserFirstName
@@ -1062,9 +1069,11 @@ data CsvUserRecord = CsvUserRecord
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+makeLenses ''CsvUserRecord
+
 instance SOP.Generic CsvUserRecord
 
-data InitialPasswordsCsv = InitialPasswordsCsv Timestamp [CsvUserRecord]
+data InitialPasswordsCsv = InitialPasswordsCsv Timestamp FilePath [CsvUserRecord]
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic InitialPasswordsCsv
@@ -1120,29 +1129,73 @@ instance Csv.ToRecord CsvUserRecord where
         , ln ^. _UserLastName
         , em ^. _Just . re emailAddress
         , li ^. _Just . _UserLogin
-        , pw ^. _Just
+        , fromMaybe missingInitialPasswordText pw
         ]
 
+missingInitialPasswordText :: ST
+missingInitialPasswordText = "<Passwort geschützt>"
 
 instance MimeRender CSVZIP InitialPasswordsCsv where  -- FIXME: handle null case like with 'EventLog'?
-    mimeRender Proxy (InitialPasswordsCsv fileAge rows) = zipLbs fileAge "Passwörter.csv" $
+    mimeRender Proxy (InitialPasswordsCsv fileAge filePath rows) = zipLbs fileAge filePath $
         cs (intercalate "," csvUserRecordHeaders <> "\n")
         <> Csv.encode rows
 
 csvUserRecordHeaders :: [String]
 csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Initiales Passwort"]
 
-adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (CsvHeaders InitialPasswordsCsv)
+csvUserRecord :: User -> CsvUserRecord
+csvUserRecord u =
+    CsvUserRecord
+        (u ^. userFirstName)
+        (u ^. userLastName)
+        (u ^. userEmail)
+        (Just $ u ^. userLogin)
+        (u ^? userPassword . _UserPassInitial . unInitialPassword)
+
+adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (AttachmentHeaders InitialPasswordsCsv)
 adminInitialPasswordsCsv clss = do
     now <- getCurrentTimestamp
-    csvZipHeaders ("Passwortliste " <> clss ^. uilabeled) .
-        InitialPasswordsCsv now . catMaybes . fmap mk <$> query (getUsersInClass clss)
+    attachmentHeaders (basename <> ".zip") .
+      InitialPasswordsCsv now (basename <> ".csv") .
+      fmap csvUserRecord <$> query (getUsersInClass clss)
   where
-    mk u = case u ^. userPassword of
-        UserPassInitial (InitialPassword ps) -> Just $ CsvUserRecord
-              (u ^. userFirstName)
-              (u ^. userLastName)
-              (u ^. userEmail)
-              (Just $ u ^. userLogin)
-              (Just ps)
-        _ -> Nothing
+    basename = "Passwortliste " <> clss ^. uilabeled
+
+
+-- xlsx
+
+newtype InitialPasswordsXlsx = InitialPasswordsXlsx LBS
+    deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic InitialPasswordsXlsx
+
+instance Page InitialPasswordsXlsx where
+    isAuthorized = adminPage
+    isResponsive _ = False
+
+instance MimeRender XLSX InitialPasswordsXlsx where
+    mimeRender Proxy (InitialPasswordsXlsx x) = x
+
+adminInitialPasswordsXlsx :: ActionM m => SchoolClass -> m (AttachmentHeaders InitialPasswordsXlsx)
+adminInitialPasswordsXlsx clss = do
+    now <- (utcTimeToPOSIXSeconds . unTimestamp) <$> getCurrentTimestamp
+    tplFile <- readTempFile "static-src/initial-passwords.xlsx"
+    tplData <- g . fmap (f . csvUserRecord) <$> query (getUsersInClass clss)
+    pure . attachmentHeaders filename . InitialPasswordsXlsx . fromXlsx now
+         . setSheetName . applyTemplateOnXlsx tplData $ toXlsx tplFile
+  where
+    filename = "Passwortliste " <> clss ^. uilabeled <> ".xlsx"
+    setSheetName = xlSheets . each . _1 .~ clss ^. uilabeled
+    g :: [TemplateDataRow] -> [(TemplateDataRow, TemplateSettings, [TemplateDataRow])]
+    g rows = [( Map.empty -- Here goes a map with global placeholders, we don't have any yet (classname ?)
+              , TemplateSettings Rows 0 -- We repeat the row 1
+              , rows
+              )]
+    f :: CsvUserRecord -> TemplateDataRow
+    f u = Map.fromList
+            [ ("firstname", CellText $ u ^. csvUserRecordFirst . _UserFirstName)
+            , ("lastname",  CellText $ u ^. csvUserRecordLast  . _UserLastName)
+            , ("email",     CellText $ u ^. csvUserRecordEmail . _Just . re emailAddress)
+            , ("login",     CellText $ u ^. csvUserRecordLogin . _Just . _UserLogin)
+            , ("password",  CellText $ fromMaybe missingInitialPasswordText (u ^. csvUserRecordInitialPass))
+            ]

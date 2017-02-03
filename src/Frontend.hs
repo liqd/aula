@@ -407,7 +407,8 @@ type AulaAdmin =
   :<|> SchoolClass ::> "delete" :> PostH NeedAdmin
        -- event log
   :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
-  :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> GetCSV InitialPasswordsCsv
+  :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> "csv"  :> GetCSV  InitialPasswordsCsv
+  :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> "xlsx" :> GetXLSX InitialPasswordsXlsx
   :<|> "downloads" :> "events" :> QueryParam "space" IdeaSpace :> GetCSV EventLog
   :<|> Topic ::> "next-phase" :> PostH (NeedCap 'CanPhaseForwardTopic)
   :<|> Topic ::> "voting-prev-phase" :> PostH (NeedCap 'CanPhaseBackwardTopic)
@@ -432,8 +433,9 @@ aulaAdmin =
   :<|> form . Page.adminDeleteUser
   :<|> runAdminHandler . Page.adminDestroyClass
   :<|> form Page.adminEventsProtocol
-  :<|> runGetHandler . Page.adminInitialPasswordsCsv
-  :<|> runGetHandler . adminEventLogCsv
+  :<|> runGetHandlerWithHeaders . Page.adminInitialPasswordsCsv
+  :<|> runGetHandlerWithHeaders . Page.adminInitialPasswordsXlsx
+  :<|> runGetHandlerWithHeaders . adminEventLogCsv
   :<|> postWithTopic (Action.topicForcePhaseChange Forward)
   :<|> postWithTopic (Action.topicForcePhaseChange Backward)
   :<|> form Page.adminPhaseChange

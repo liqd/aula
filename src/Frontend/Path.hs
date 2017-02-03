@@ -123,7 +123,8 @@ module Frontend.Path
     , adminEditClass
     , adminDeleteUser
     , adminDeleteClass
-    , adminDlPass
+    , adminDlPassXlsx
+    , adminDlPassCsv
     , adminTopicNextPhase
     , adminTopicVotingPrevPhase
     , adminTermsOfUse
@@ -456,7 +457,8 @@ data AdminMode (r :: AllowedMethod) =
   | AdminDeleteClass SchoolClass
   | AdminViewClasses (Maybe ClassesFilterQuery)
   | AdminEvent
-  | AdminDlPass SchoolClass
+  | AdminDlPassCsv SchoolClass
+  | AdminDlPassXlsx SchoolClass
   | AdminDlEvents (Maybe IdeaSpace)
   | AdminTopicNextPhase (AUID Topic)
   | AdminTopicVotingPrevPhase (AUID Topic)
@@ -482,8 +484,11 @@ adminDeleteUser = Admin . AdminDeleteUser . view _Id
 adminDeleteClass :: SchoolClass -> Main 'AllowPost
 adminDeleteClass = Admin . AdminDeleteClass
 
-adminDlPass :: SchoolClass -> Main 'AllowGetPost
-adminDlPass = Admin . AdminDlPass
+adminDlPassXlsx :: SchoolClass -> Main 'AllowGetPost
+adminDlPassXlsx = Admin . AdminDlPassXlsx
+
+adminDlPassCsv :: SchoolClass -> Main 'AllowGetPost
+adminDlPassCsv = Admin . AdminDlPassCsv
 
 adminDuration :: Main 'AllowGetPost
 adminDuration = Admin AdminDuration
@@ -530,7 +535,8 @@ adminMode AdminCreateClass                path = path </> "class" </> "create"
 adminMode (AdminEditClass clss)           path = path </> "class" </> uriPart clss </> "edit"
 adminMode (AdminDeleteClass clss)         path = path </> "class" </> uriPart clss </> "delete"
 adminMode AdminEvent                      path = path </> "event"
-adminMode (AdminDlPass clss)              path = path </> "downloads" </> "passwords" </> uriPart clss
+adminMode (AdminDlPassCsv clss)           path = path </> "downloads" </> "passwords" </> uriPart clss </> "csv"
+adminMode (AdminDlPassXlsx clss)          path = path </> "downloads" </> "passwords" </> uriPart clss </> "xlsx"
 adminMode (AdminDlEvents mspc)            path = path </> "downloads" </> "events"
                                                  </?> ("space", cs . toUrlPiece <$> mspc)
 adminMode (AdminTopicNextPhase tid)       path = path </> "topic" </> uriPart tid </> "next-phase"
