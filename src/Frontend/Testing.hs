@@ -12,6 +12,7 @@ where
 import Servant
 
 import Frontend.Core
+import Frontend.Page.Admin (InitialPasswordsXlsx(..))
 import Frontend.Prelude
 import Persistent
 import Action
@@ -29,6 +30,8 @@ type AulaTesting =
   :<|> "error500" :> GetH ()
   :<|> "error303" :> GetH ()
 
+  :<|> "attachment" :> GetXLSX InitialPasswordsXlsx
+
 aulaTesting :: (GenArbitrary m, ActionM m) => ServerT AulaTesting m
 aulaTesting =
        runHandler (PageShow <$> Action.query getIdeas)
@@ -41,3 +44,5 @@ aulaTesting =
   :<|> runGetHandler undefined  -- (intentional)
   :<|> runGetHandler (throwError500 "testing error500")
   :<|> runGetHandler (redirect ("/target" :: String))
+
+  :<|> (attachmentHeaders "test.xlsx" <$> runGetHandler (pure (InitialPasswordsXlsx "contents")))

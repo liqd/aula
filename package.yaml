@@ -93,6 +93,8 @@ dependencies:
     - wai-app-static
     - wai-middleware-metrics
     - warp
+    - xlsx
+    - xlsx-templater
     - yaml
     - zip-archive
 

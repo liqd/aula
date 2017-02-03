@@ -635,19 +635,32 @@ data CSVZIP
 instance Accept CSVZIP where
     contentType Proxy = "application" // "zip"  -- (without zip: "text" // "csv")
 
-type CsvHeaders a = Headers '[CsvHeadersContentDisposition] a
-type CsvHeadersContentDisposition = Header "Content-Disposition" String  -- appease hlint v1.9.22
+type ContentDisposition = "Content-Disposition"  -- appease hlint v1.9.22
+type AttachmentHeaders a = Headers '[Header ContentDisposition String] a
 
-instance MimeRender CSVZIP a => MimeRender CSVZIP (CsvHeaders a) where
+instance MimeRender CSVZIP a => MimeRender CSVZIP (AttachmentHeaders a) where
     mimeRender proxy (Headers v _) = mimeRender proxy v
 
-csvZipHeaders :: String -> a -> CsvHeaders a
-csvZipHeaders filename = addHeader $ "attachment; filename=" <> filename <> ".zip"
+attachmentHeaders :: FilePath -> a -> AttachmentHeaders a
+attachmentHeaders filename = addHeader $ "attachment; filename=\"" <> (sanitize <$> filename) <> "\""
+  where
+    sanitize c = if c `elem` (['a'..'z'] <> ['A'..'Z'] <> " äöüÄÖÜß0123456789-.,_") then c else '_'
 
 zipLbs :: Timestamp -> FilePath -> LBS -> LBS
 zipLbs now fname content =
     Zip.fromArchive $ Zip.Archive
         [Zip.toEntry fname (timestampToEpoch now) content] Nothing ""
+
+
+-- * xlsx helpers
+
+data XLSX
+
+instance Accept XLSX where
+    contentType Proxy = "application" // "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+instance MimeRender XLSX a => MimeRender XLSX (AttachmentHeaders a) where
+    mimeRender proxy (Headers v _) = mimeRender proxy v
 
 
 -- * misc

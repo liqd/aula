@@ -13,3 +13,6 @@
 [submodule "submodules/hs-webdriver"]
 	path = submodules/hs-webdriver
 	url = https://github.com/zerobuzz/hs-webdriver
+[submodule "submodules/xlsx-templater"]
+	path = submodules/xlsx-templater
+        url = https://github.com/np/xlsx-templater
