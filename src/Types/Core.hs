@@ -641,9 +641,10 @@ type AttachmentHeaders a = Headers '[Header ContentDisposition String] a
 instance MimeRender CSVZIP a => MimeRender CSVZIP (AttachmentHeaders a) where
     mimeRender proxy (Headers v _) = mimeRender proxy v
 
--- FIXME Escaping?
-attachmentHeaders :: String -> a -> AttachmentHeaders a
-attachmentHeaders filename = addHeader $ "attachment; filename=\"" <> filename <> "\""
+attachmentHeaders :: FilePath -> a -> AttachmentHeaders a
+attachmentHeaders filename = addHeader $ "attachment; filename=\"" <> (sanitize <$> filename) <> "\""
+  where
+    sanitize c = if c `elem` (['a'..'z'] <> ['A'..'Z'] <> " äöüÄÖÜß0123456789-.,_") then c else '_'
 
 zipLbs :: Timestamp -> FilePath -> LBS -> LBS
 zipLbs now fname content =
