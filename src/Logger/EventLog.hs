@@ -16,6 +16,7 @@
 module Logger.EventLog
 where
 
+import Control.Exception (assert)
 import Control.Lens
 import Data.Maybe (fromMaybe)
 import Data.String (IsString)
@@ -42,7 +43,7 @@ data EventLog = EventLog
     , _eventLogURL       :: URL
     , _eventLogItems     :: [EventLogItemWarm]
     }
-  deriving (Generic)
+  deriving (Show, Generic)
 
 -- | This type is migration-critial: we may need to support parting old values if we change it in
 -- production.  See 'CSV.ToRecord' instance(s) below.
@@ -70,24 +71,32 @@ data EventLogItemValue user topic idea comment =
 
 
 type EventLogItemCold = EventLogItem (AUID User) (AUID Topic) (AUID Idea) CommentKey
-type EventLogItemWarm = EventLogItem User Topic Idea Comment
+type EventLogItemWarm = EventLogItem (Perhaps User) (Perhaps Topic) (Perhaps Idea) (Perhaps Comment)
 
 type EventLogItemValueCold = EventLogItemValue (AUID User) (AUID Topic) (AUID Idea) CommentKey
-type EventLogItemValueWarm = EventLogItemValue User Topic Idea Comment
+type EventLogItemValueWarm = EventLogItemValue (Perhaps User) (Perhaps Topic) (Perhaps Idea) (Perhaps Comment)
 
 type ContentCold = Either3 (AUID Topic) (AUID Idea) CommentKey
-type ContentWarm = Either3 Topic Idea Comment
+type ContentWarm = Either3 (Perhaps Topic) (Perhaps Idea) (Perhaps Comment)
 
+data Perhaps a = PerhapsYes a | PerhapsNo String  -- should be @('KeyOf' a)@, but 'KeyOf' is a type
+  deriving (Show, Generic)                        -- family and cannot give us Generic, which we
+                                                  -- need at least for the 'Arbitrary' instances.
+                                                  -- (at least i *think* that was the problem.
+                                                  -- could be worth trying that again.)
 
 instance SOP.Generic EventLog
 instance SOP.Generic (EventLogItem u t i c)
 instance SOP.Generic (EventLogItemValue u t i c)
+instance SOP.Generic (Perhaps a)
 
 instance Aeson.ToJSON EventLogItemCold           where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON EventLogItemValueCold      where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON a => Aeson.ToJSON (Perhaps a) where toJSON = Aeson.gtoJson
 
 instance Aeson.FromJSON EventLogItemCold           where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON EventLogItemValueCold      where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON a => Aeson.FromJSON (Perhaps a) where parseJSON = Aeson.gparseJson
 
 
 -- * delivering the event log
@@ -117,38 +126,55 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
     toRecord (WithURL domainUrl (EventLogItem ispace timestamp user ev)) = CSV.toRecord
         [ ideaSpaceCode ispace
         , showTimestamp timestamp
-        , user ^. userLogin . unUserLogin . csi
+        , showUser user
         ] <> f ev
       where
         objDesc :: ContentWarm -> ST
-        objDesc (Left3   t) = "Thema " <> t ^. topicTitle . showed . csi
-        objDesc (Middle3 i) = "Idee "  <> i ^. ideaTitle  . showed . csi
-        objDesc (Right3  c) =
-            chop $ "Verbesserungsvorschlag " <> (c ^. commentText . showed . to (take 30) . csi)
+        objDesc (Left3   (PerhapsYes t)) = "Thema " <> t ^. topicTitle . showed . csi
+        objDesc (Middle3 (PerhapsYes i)) = "Idee "  <> i ^. ideaTitle  . showed . csi
+        objDesc (Right3  (PerhapsYes c)) = chop 60 $ "Verbesserungsvorschlag " <> (c ^. commentText . showed . csi . to (chop 30))
+        objDesc (Left3   (PerhapsNo t))  = "Thema (GELÖSCHT) " <> cs t
+        objDesc (Middle3 (PerhapsNo i))  = "Idee (GELÖSCHT) " <> cs i
+        objDesc (Right3  (PerhapsNo c))  = chop 60 $ "Verbesserungsvorschlag (GELÖSCHT) " <> cs c
 
-        chop :: ST -> ST
-        chop s = if ST.length s <= 60 then s else ST.take 57 s <> "..."
+        chop :: Int -> ST -> ST
+        chop i s = assert (i >= 3) $ if ST.length s <= i then s else ST.take (i - 3) s <> "..."
+
+        objLink' :: U.Main 'AllowGetPost -> ST
+        objLink' = (domainUrl <>) . absoluteUriPath . relPath
 
         objLink :: ContentWarm -> ST
-        objLink = (domainUrl <>) . absoluteUriPath . relPath . objLink'
+        objLink (Left3   (PerhapsYes t)) = objLink' $ U.listIdeasInTopic t ListIdeasInTopicTabAll Nothing
+        objLink (Middle3 (PerhapsYes i)) = objLink' $ U.viewIdea i
+        objLink (Right3  (PerhapsYes c)) = objLink' $ U.viewIdeaAtComment' (c ^. _Key)
+        -- always add the description if there is a link!
+        objLink (Left3   (PerhapsNo _))  = nil
+        objLink (Middle3 (PerhapsNo _))  = nil
+        objLink (Right3  (PerhapsNo _))  = nil
 
-        objLink' :: ContentWarm -> U.Main 'AllowGetPost
-        objLink' (Left3   t) = U.listIdeasInTopic t ListIdeasInTopicTabAll Nothing
-        objLink' (Middle3 i) = U.viewIdea i
-        objLink' (Right3  c) = U.viewIdeaAtComment' (c ^. _Key)
+        showUser :: Perhaps User -> String
+        showUser (PerhapsYes u) = u ^. userLogin . unUserLogin . csi
+        showUser (PerhapsNo u)  = "(GELÖSCHT: " <> cs u <> ")"
 
+        showTopic :: Maybe (Perhaps Topic) -> ST
+        showTopic Nothing = "wilde Ideen"
+        showTopic (Just (PerhapsYes t)) = t ^. topicTitle . showed . csi
+        showTopic (Just (PerhapsNo  t)) = "(GELÖSCHT: " <> cs t <> ")"
+
+        f :: EventLogItemValueWarm -> CSV.Record
         f (EventLogUserCreates obj) = CSV.toRecord
             [ "legt " <> objDesc obj <> " an.", objLink obj ]
 
         f (EventLogUserEdits obj) = CSV.toRecord
             [ "bearbeitet " <> objDesc obj <> ".", objLink obj ]
 
-        f (EventLogUserMarksIdeaFeasible (Middle3 -> idea) mIsFeasible) = case mIsFeasible of
-            Nothing           -> CSV.toRecord [ "löscht Durchführbarkeitsbewertung", objLink idea ]
+        f (EventLogUserMarksIdeaFeasible (Middle3 -> idea) mIsFeasible) = CSV.toRecord $ (case mIsFeasible of
+            Nothing           -> [ "löscht Durchführbarkeitsbewertung" ]
             (Just isFeasible) -> let what = case isFeasible of
                                               IdeaFeasible    -> "durchführbar."
                                               IdeaNotFeasible -> "nicht durchführbar."
-                                 in CSV.toRecord [ "bewertet Idee als " <> what, objLink idea ]
+                                 in [ "bewertet Idee als " <> what ])
+            <> [objDesc idea, objLink idea]
 
         f (EventLogUserVotesOnIdea (Middle3 -> idea) Nothing) = CSV.toRecord
             [ "zieht seine Stimme für oder gegen " <> objDesc idea <> " zurück.", objLink idea ]
@@ -168,13 +194,13 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
             what = objDesc (Right3 $ fromMaybe comment mcomment)
 
         f (EventLogUserDelegates ctxDesc delegate) = CSV.toRecord
-            [ "beauftragt in " <> show ctxDesc <> " an " <> delegate ^. userLogin . _UserLogin . csi
+            [ "beauftragt in " <> show ctxDesc <> " an " <> showUser delegate
             , "(kein Link verfügbar)"
             -- FIXME: there should be a link, and 'show ctxDesc' needs to be polished.
             ]
 
         f (EventLogUserWithdrawsDelegation ctxDesc delegate) = CSV.toRecord
-            [ "zieht Beauftragung in " <> show ctxDesc <> " an " <> delegate ^. userLogin . _UserLogin . csi <> " zurück"
+            [ "zieht Beauftragung in " <> show ctxDesc <> " an " <> showUser delegate <> " zurück"
             , "(kein Link verfügbar)"
             -- FIXME: there should be a link, and 'show ctxDesc' needs to be polished.
             ]
@@ -186,12 +212,9 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
             ]
 
         f (EventLogIdeaNewLocation (Middle3 -> idea) mt1 mt2) = CSV.toRecord
-            [ "verschiebt " <> objDesc idea <> " von " <> show_ mt1 <> " nach " <> show_ mt2 <> "."
+            [ "verschiebt " <> objDesc idea <> " von " <> showTopic mt1 <> " nach " <> showTopic mt2 <> "."
             , objLink idea
             ]
-          where
-            show_ :: Maybe Topic -> ST
-            show_ mt = maybe "wilde Ideen" (view topicTitle) mt ^. showed . csi
 
         f (EventLogIdeaReachesQuorum (Middle3 -> idea)) = CSV.toRecord
             [ objDesc idea <> " erreicht das Quorum.", objLink idea ]
