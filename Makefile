@@ -110,7 +110,7 @@ testxlsxclass:
 	rm -f cookie-jar
 
 tags: .phony
-	hasktags -b src/ tests/ exec/ dist/build/autogen/
+	hasktags -b src/ tests/ exec/
 
 grepi.%:
 	git grep -Hni $* src tests exec

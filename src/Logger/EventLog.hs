@@ -51,21 +51,21 @@ data EventLogItem user topic idea comment =
   deriving (Eq, Show, Generic)
 
 data EventLogItemValue user topic idea comment =
-    EventLogUserCreates           (Either3 topic idea comment)
-  | EventLogUserEdits             (Either3 topic idea comment)
-  | EventLogUserMarksIdeaFeasible idea (Maybe IdeaJuryResultType)
-  | EventLogUserVotesOnIdea       idea (Maybe IdeaVoteValue)
-  | EventLogUserVotesOnComment    idea comment (Maybe comment) UpDown
+    EventLogUserCreates              (Either3 topic idea comment)
+  | EventLogUserEdits                (Either3 topic idea comment)
+  | EventLogUserMarksIdeaFeasible    idea (Maybe IdeaJuryResultType)
+  | EventLogUserVotesOnIdea          idea (Maybe IdeaVoteValue)
+  | EventLogUserVotesOnComment       idea comment (Maybe comment) UpDown
       -- FIXME: this should just be a comment key resp. comment, but following the type errors
       -- reveals some things that are not trivial to refactor.  the current situation is not very
       -- nice: the first comment is either the target (if a top-level comment) or the parent of the
       -- target; the second is either absent (for top-level comments) or the target.  this could be
       -- easier.
-  | EventLogUserDelegates         DScope user
-  | EventLogUserWithdrawsDelegation DScope user
-  | EventLogTopicNewPhase         topic Phase Phase
+  | EventLogUserDelegates            DScope user
+  | EventLogUserWithdrawsDelegation  DScope user
+  | EventLogTopicNewPhase            topic Phase Phase
   | EventLogIdeaNewLocation          idea (Maybe topic) (Maybe topic)
-  | EventLogIdeaReachesQuorum     idea
+  | EventLogIdeaReachesQuorum        idea
   deriving (Eq, Show, Generic)
 
 
