@@ -1223,6 +1223,9 @@ fishAvatars = unsafePerformIO fishAvatarsIO
 
 -- * event log
 
+instance (Arbitrary a) => Arbitrary (Perhaps a) where
+  arbitrary = PerhapsYes <$> arbitrary
+
 instance Arbitrary EventLog where
     arbitrary = EventLog <$> arb <*> arbWord <*> nonEmpty
       where

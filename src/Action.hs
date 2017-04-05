@@ -144,20 +144,12 @@ module Action
 where
 
 import Codec.Picture (DynamicImage)
-import Control.Exception (SomeException, assert)
+import Control.Exception (assert)
 import Control.Lens
-import Control.Monad ((>=>), filterM, void, when)
 import Control.Monad.Reader (runReader, runReaderT)
-import Control.Monad.Except (MonadError)
 import Control.Monad.Trans.Except (runExcept)
-import Data.Char (ord)
 import Data.List as List (find)
-import Data.Maybe (isJust)
 import Data.Monoid
-import Data.String.Conversions (ST, LBS, cs)
-import Data.String (fromString)
-import Data.Typeable (Typeable)
-import Data.Foldable (forM_)
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
@@ -172,6 +164,7 @@ import qualified Data.Vector as V
 
 import Action.Smtp
 import AulaMetrics
+import AulaPrelude
 import Config
     ( Config
     , GetConfig(..)
@@ -1149,19 +1142,22 @@ instance ActionM m => WarmUp m ContentCold ContentWarm where
 
 -- | for internal use only.
 class WarmUp' m a where
-    warmUp' :: KeyOf a -> m a
+    warmUp'' :: KeyOf a -> m (Maybe a)
+
+warmUp' :: (Functor m, WarmUp' m a, Show (KeyOf a)) => KeyOf a -> m (Perhaps a)
+warmUp' k = maybe (PerhapsNo (show k)) PerhapsYes <$> warmUp'' k
 
 instance ActionM m => WarmUp' m User where
-    warmUp' k = mquery (findUser k)
+    warmUp'' k = query (findUser k)
 
 instance ActionM m => WarmUp' m Topic where
-    warmUp' k = mquery (findTopic k)
+    warmUp'' k = query (findTopic k)
 
 instance ActionM m => WarmUp' m Idea where
-    warmUp' k = mquery (findIdea k)
+    warmUp'' k = query (findIdea k)
 
 instance ActionM m => WarmUp' m Comment where
-    warmUp' k = mquery (findComment k)
+    warmUp'' k = query (findComment k)
 
 currentUserCapCtx :: (ActionPersist m, ActionUserHandler m, ActionLog m) => m CapCtx
 currentUserCapCtx = userOnlyCapCtx <$> currentUser

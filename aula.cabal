@@ -750,6 +750,7 @@ test-suite spec
     , wreq
     , webdriver
   other-modules:
+      ActionSpec
       AllModulesSpec
       AulaTests
       AulaTests.Stories.DSL
