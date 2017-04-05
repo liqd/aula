@@ -10,8 +10,8 @@ test -z "$NEW_VERSION" \
 git status -b | grep -q "On branch $ONLY_RUN_ON_BRANCH" \
     || ( echo "Please only run this script on master."; exit 1 )
 
-perl -i -pe 's/(version:\s*).*/${1}'"$NEW_VERSION"'/' package.yaml
-hpack
+perl -i -pe 's/^(version:\s*).*/${1}'"$NEW_VERSION"'/' package.yaml
+perl -i -pe 's/^(version:\s*).*/${1}'"$NEW_VERSION"'/' aula.cabal
 git add package.yaml aula.cabal
 
 git commit -m 'Release '"$NEW_VERSION"'.'
