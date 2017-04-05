@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE ViewPatterns         #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -23,6 +22,7 @@ spec :: Spec
 spec = do
   describe "event log" $ do
     it "works" $ do
+      pendingWith "needs acid-state snapshot and log file to run."
       l :: EventLog <- runAction readEventLog
       (ST.length . cs . show $ l) `shouldNotBe` 0
 
