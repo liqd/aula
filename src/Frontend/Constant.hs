@@ -7,7 +7,7 @@ import Data.String.Conversions (ST)
 -- FIXME: Search for global constants
 
 topicDescMaxLength :: Int
-topicDescMaxLength = 120
+topicDescMaxLength = 800
 
 minElabPeriod :: Int
 minElabPeriod = 1
