@@ -199,6 +199,7 @@ capabilities (CapCtx u ms mp mi mc mup mdt)
 
 delegationCapabilities :: User -> Maybe User -> Maybe IdeaSpace -> Maybe Phase -> [Capability]
 -- guards: no delegation in these situations
+delegationCapabilities _ _ _ (Just PhaseVoting{})              = []
 delegationCapabilities _ _ _ (Just PhaseResult)                = []
 delegationCapabilities current _ _ _ | not (isStudent current) = []
 
