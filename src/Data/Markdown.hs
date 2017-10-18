@@ -41,7 +41,7 @@ import qualified Data.Aeson as Aeson
 import qualified Data.CSS.Syntax.Tokens as CSS
 import qualified Data.Markdown.HtmlWhiteLists as WhiteLists
 import qualified Generics.Generic.Aeson as Aeson
-import qualified Text.HTML.Parser as HTML
+import qualified Text.HTML.TagSoup as HTML
 
 
 newtype Document = Markdown { unMarkdown :: ST }
@@ -60,15 +60,14 @@ instance Aeson.FromJSON Document where parseJSON = Aeson.gparseJson
 -- * validation and construction
 
 markdown :: ST -> Either [ST] Document
-markdown raw = case mconcat $ tokenToErrors <$> HTML.tagStream raw of
+markdown raw = case mconcat $ tokenToErrors <$> HTML.parseTags raw of
     []  -> Right $ Markdown raw
     bad -> Left bad
 
-tokenToErrors :: HTML.Token -> [ST]
+tokenToErrors :: HTML.Tag ST -> [ST]
 tokenToErrors = mconcat . \case
     (HTML.TagOpen el attrs) -> badEl el : (badAttr el <$> attrs)
     (HTML.TagClose el)      -> [badEl el]
-    (HTML.Doctype _)        -> [["doc type not allowed"]]
     _                       -> []
 
 
@@ -78,8 +77,8 @@ badEl (mk -> el) =
   where
     WhiteLists.HtmlElements els = WhiteLists.htmlElements
 
-badAttr :: ST -> HTML.Attr -> [ST]
-badAttr (mk -> el) (HTML.Attr (mk -> akey) (mk -> aval)) =
+badAttr :: ST -> HTML.Attribute ST -> [ST]
+badAttr (mk -> el) (mk -> akey, mk -> aval) =
     ["unsafe html attribute: " <> foldedCase akey
         | not $ any (`elem` attrs) [(Nothing, akey), (Just el, akey)]]
     <> badCssPropsIn akey aval

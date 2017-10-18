@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.14.1.
+-- This file has been generated from package.yaml by hpack version 0.17.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -162,7 +162,7 @@ library
     , functor-infix
     , generic-aeson
     , generics-sop
-    , html-parse >= 0.1
+    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
@@ -305,7 +305,7 @@ executable aula-avatars
     , functor-infix
     , generic-aeson
     , generics-sop
-    , html-parse >= 0.1
+    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
@@ -381,7 +381,7 @@ executable aula-html-dummies
     , functor-infix
     , generic-aeson
     , generics-sop
-    , html-parse >= 0.1
+    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
@@ -460,7 +460,7 @@ executable aula-i18n
     , functor-infix
     , generic-aeson
     , generics-sop
-    , html-parse >= 0.1
+    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
@@ -538,7 +538,7 @@ executable aula-init-state
     , functor-infix
     , generic-aeson
     , generics-sop
-    , html-parse >= 0.1
+    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
@@ -614,7 +614,7 @@ executable aula-server
     , functor-infix
     , generic-aeson
     , generics-sop
-    , html-parse >= 0.1
+    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
@@ -691,7 +691,7 @@ test-suite spec
     , functor-infix
     , generic-aeson
     , generics-sop
-    , html-parse >= 0.1
+    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types

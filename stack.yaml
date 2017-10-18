@@ -17,7 +17,6 @@ extra-deps:
 - configifier-0.1.1
 - elocrypt-0.4.1
 - functor-infix-0.0.3
-- html-parse-0.1.0.0
 - thentos-cookie-session-0.9.1
 - unordered-containers-0.2.7.0
 - uri-bytestring-0.1.9.2
