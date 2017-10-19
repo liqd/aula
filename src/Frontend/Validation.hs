@@ -10,6 +10,7 @@ module Frontend.Validation
     ( module TP
 
       -- * field validation
+    , dftext
     , FieldValidator
     , FieldName
     , FieldParser

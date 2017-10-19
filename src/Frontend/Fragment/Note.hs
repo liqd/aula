@@ -44,7 +44,7 @@ noteFormInput :: (Monad n, Monad m) => Note t -> Maybe Document -> DF.Form (Html
 noteFormInput note mdoc =
     "note-text" .: validate (cs $ noteFieldNameInValiationError note)
                             markdownV
-                            (DF.text (unMarkdown <$> mdoc))
+                            (dftext (unMarkdown <$> mdoc))
 
 noteFormOptionalInput :: (Monad n, Monad m) => Note t -> Maybe Document -> DF.Form (HtmlT n ()) m (Maybe Document)
 noteFormOptionalInput note mdoc =

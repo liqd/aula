@@ -1003,7 +1003,7 @@ instance FormPage PageAdminResetPassword where
     redirectOf (PageAdminResetPassword u _p) _ = U.adminEditUser u
 
     makeForm (PageAdminResetPassword _u p) =
-        InitialPassword <$> ("new-pwd" .: DF.text (p ^. unInitialPassword . to Just))
+        InitialPassword <$> ("new-pwd" .: dftext (p ^. unInitialPassword . to Just))
 
     formPage v form p@(PageAdminResetPassword usr pwd) = adminFrame p . semanticDiv p $ do
         h3_ $ "Passwort zurücksetzen für Nutzer #" <> usr ^. _Id . unAUID . showed . html
@@ -1042,7 +1042,7 @@ instance FormPage PageAdminTermsOfUse where
         <$> validate
                 "Nutzungsbedingungen"
                 markdownV
-                ("terms-of-use" .: (DF.text . Just . unMarkdown $ termsOfUseDoc))
+                ("terms-of-use" .: (dftext . Just . unMarkdown $ termsOfUseDoc))
     formPage v form p = adminFrame p . semanticDiv p $ do
         form $ do
             h3_ "Bitte passen Sie hier die Nutzungsbedingungen an"

@@ -290,9 +290,9 @@ instance FormPage CreateTopic where
 
     makeForm ct =
         ProtoTopic
-        <$> ("title" .: validateTopicTitle (ct ^. ctIdeaSpace) Nothing (DF.text nil))
-        <*> ("desc"  .: validateTopicDesc  (DF.text nil))
-        <*> ("image" .: DF.text nil) -- FIXME: validation
+        <$> ("title" .: validateTopicTitle (ct ^. ctIdeaSpace) Nothing (dftext nil))
+        <*> ("desc"  .: validateTopicDesc  (dftext nil))
+        <*> ("image" .: dftext nil)
         <*> pure (ct ^. ctIdeaSpace)
         <*> makeFormIdeaSelection [] (ct ^.. ctIdeas . each . ideaStatsIdea)
         <*> pure (ct ^. ctRefPhaseEnd)
@@ -334,8 +334,8 @@ instance FormPage EditTopic where
 
     makeForm (EditTopic _ctx space topic ideas preselected) =
         EditTopicData
-        <$> ("title" .: validateTopicTitle space (Just topic) (DF.text . Just $ topic ^. topicTitle))
-        <*> ("desc"  .: validateTopicDesc  (DF.text (topic ^. topicDesc . to unDescription . to Just)))
+        <$> ("title" .: validateTopicTitle space (Just topic) (dftext . Just $ topic ^. topicTitle))
+        <*> ("desc"  .: validateTopicDesc  (dftext (topic ^. topicDesc . to unDescription . to Just)))
         <*> makeFormIdeaSelection preselected (_ideaStatsIdea <$> ideas)
 
     formPage v form et = do
