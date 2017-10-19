@@ -54,7 +54,7 @@ migrateDB cfg = runAction cfg $ do
       forM_ ideas $ \idea -> do
         desc' <- sanify $ idea ^. ideaDesc
         title' <- sanify' $ idea ^. ideaTitle
-        Action.editIdea (idea ^. ideaMeta . metaKey) $ ProtoIdea
+        Action.editIdea (idea ^. ideaMeta . metaKey) ProtoIdea
                                { _protoIdeaTitle      = title'
                                , _protoIdeaDesc       = desc'
                                , _protoIdeaCategory   = idea ^. ideaCategory
