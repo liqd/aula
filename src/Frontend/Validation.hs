@@ -64,6 +64,9 @@ type FieldParser a = Parsec String () a
 
 -- * field validation
 
+dftext :: (Monoid v, Monad m) => Formlet v m ST.Text
+dftext = DF.text . fmap sanitizeUnicode
+
 newtype FieldValidator a b = FieldValidator { unFieldValidator :: a -> DF.Result [ST] b }
 
 type FieldValidator' a = FieldValidator a a
@@ -91,10 +94,10 @@ fieldEither fun = FieldValidator $ either DF.Error DF.Success . fun
 -- validation errors instead of strings).
 -- FIXME: Use red color for error message when displaying them on the form.
 fieldParser
-    :: (ConvertibleStrings s String)
+    :: (ConvertibleStrings s ST)
     => FieldParser a -> String -> FieldValidator s a
 fieldParser parser msg =
-    FieldValidator (either errorString DF.Success . parse ((parser <* eof) <??> msg) "" . cs)
+    FieldValidator (either errorString DF.Success . parse ((parser <* eof) <??> msg) "" . cs . sanitizeUnicode . cs)
   where
     errorString = DF.Error . fmap cs . showErrorMessagesDe . errorMessages
 
@@ -173,7 +176,7 @@ testValidator v x = case validate' "test" v x of
 
 -- * simple validators
 
-inRangeV :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
+inRangeV :: (ConvertibleStrings s ST) => Int -> Int -> FieldValidator s Int
 inRangeV mn mx = fieldParser
     (satisfies isBetween (read <$> many1 digit))
     (unwords ["Zahl zwischen", show mn, "und", show mx])
@@ -203,9 +206,9 @@ type DfTextField s = forall a. Getter s a -> Traversal' a ST -> DfForm a
 --    field :: DfTextField SomeType
 --    field = dfTextField someData
 dfTextField :: s -> DfTextField s
-dfTextField s l p = s ^. l & p %%~ DF.text . Just
+dfTextField s l p = s ^. l & p %%~ dftext . Just
 
-type StringFieldValidator = forall r s . (ConvertibleStrings r String, ConvertibleStrings String s)
+type StringFieldValidator = forall r s . (ConvertibleStrings r ST, ConvertibleStrings String s)
                                          => FieldValidator r s
 
 -- See `usernameV`
@@ -241,7 +244,7 @@ classnameV = fieldParser
 classnameF :: (ActionPersist m, Monad n) => Maybe ClassName -> DF.Form (HtmlT n ()) m ClassName
 classnameF mcl =
     "classname" .: DF.validateM chk (ClassName <$> Frontend.Validation.validate "Klasse" classnameV
-                                                            (DF.text (mcl ^? _Just . unClassName)))
+                                                            (dftext (mcl ^? _Just . unClassName)))
   where
     chk "Schule" = pure $ DF.Error "Klassenname ist bereits vergeben"
     chk cl = do
@@ -281,7 +284,7 @@ checkEmail name value = case Email.emailAddress (cs value) of
 
 -- Same as 'optionalEmailField' but the email value is required.
 emailField :: FieldName -> Maybe Frontend.EmailAddress -> DfForm Frontend.EmailAddress
-emailField name emailValue = DF.validate (checkEmail name) (DF.text (emailValue ^? _Just . re Frontend.emailAddress))
+emailField name emailValue = DF.validate (checkEmail name) (dftext (emailValue ^? _Just . re Frontend.emailAddress))
 
 
 -- * missing things from parsec

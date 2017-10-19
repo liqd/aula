@@ -24,6 +24,7 @@
 module Data.Markdown
   ( Document, markdown, unMarkdown
   , PlainDocument(PlainDocument), unDescription
+  , sanitizeUnicode
   )
 where
 
