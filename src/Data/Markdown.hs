@@ -66,13 +66,14 @@ markdown raw = case mconcat $ tokenToErrors <$> HTML.parseTags (sanitizeUnicode 
     []  -> Right $ Markdown raw
     bad -> Left bad
 
--- | I tried some things here to fix #1033 until the crash went away.  I don't really know what I'm
--- doing here, hope I didn't break anything!  ~fisx
+-- | I tried some things here to fix #1033, but the problem turned out to be located elsewhere, so
+-- this doesn't do anything.  ~fisx
 sanitizeUnicode :: ST -> ST
-sanitizeUnicode = two . one
+sanitizeUnicode = id
   where
-    one = Norm.normalize Norm.NFD . Norm.normalize Norm.NFKD . Norm.normalize Norm.NFC . Norm.normalize Norm.NFKC
-    two = cs . mapMaybe f . cs
+    _one, _two :: ST -> ST
+    _one = Norm.normalize Norm.NFD . Norm.normalize Norm.NFKD . Norm.normalize Norm.NFC . Norm.normalize Norm.NFKC
+    _two = cs . mapMaybe f . cs
       where
         f c
           | UnicodeProps.isWhiteSpace c = Just ' '
