@@ -68,8 +68,8 @@ markdown raw = case mconcat $ tokenToErrors <$> HTML.parseTags (sanitizeUnicode 
     []  -> Right $ Markdown raw
     bad -> Left bad
 
--- | I tried some things here to fix #1033, but the problem turned out to be located elsewhere, so
--- this doesn't do anything.  ~fisx
+-- | We tried some things here to fix #1033.  The work-around turned out to just disallow all
+-- non-basic-latin characters.  Sad.
 sanitizeUnicode :: ST -> ST
 sanitizeUnicode = _three
   where
