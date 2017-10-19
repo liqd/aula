@@ -31,6 +31,7 @@ where
 import Data.CaseInsensitive
 import Control.Lens
 import Data.Binary
+import Data.Char (ord)
 import Data.Data
 import Data.List ((\\))
 import Data.Maybe (catMaybes)
@@ -39,12 +40,13 @@ import Data.String.Conversions
 import GHC.Generics (Generic)
 
 import qualified Data.Aeson as Aeson
+import qualified Data.Char.Properties as UnicodeProps
 import qualified Data.CSS.Syntax.Tokens as CSS
 import qualified Data.Markdown.HtmlWhiteLists as WhiteLists
+import qualified Data.Text as ST
 import qualified Data.Text.Normalize as Norm
 import qualified Generics.Generic.Aeson as Aeson
 import qualified Text.HTML.TagSoup as HTML
-import qualified Data.Char.Properties as UnicodeProps
 
 newtype Document = Markdown { unMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic, Typeable, Data)
@@ -69,9 +71,9 @@ markdown raw = case mconcat $ tokenToErrors <$> HTML.parseTags (sanitizeUnicode 
 -- | I tried some things here to fix #1033, but the problem turned out to be located elsewhere, so
 -- this doesn't do anything.  ~fisx
 sanitizeUnicode :: ST -> ST
-sanitizeUnicode = id
+sanitizeUnicode = _three
   where
-    _one, _two :: ST -> ST
+    _one, _two, _three :: ST -> ST
     _one = Norm.normalize Norm.NFD . Norm.normalize Norm.NFKD . Norm.normalize Norm.NFC . Norm.normalize Norm.NFKC
     _two = cs . mapMaybe f . cs
       where
@@ -79,6 +81,7 @@ sanitizeUnicode = id
           | UnicodeProps.isWhiteSpace c = Just ' '
           | UnicodeProps.gcMajorClass (UnicodeProps.getGeneralCategory c) == UnicodeProps.ClOther = Nothing
           | otherwise = Just c
+    _three = ST.filter $ \(c :: Char) -> ord c < 256
 
 mapMaybe :: (a -> Maybe b) -> [a] -> [b]
 mapMaybe f = catMaybes . fmap f
