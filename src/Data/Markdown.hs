@@ -40,9 +40,10 @@ import GHC.Generics (Generic)
 import qualified Data.Aeson as Aeson
 import qualified Data.CSS.Syntax.Tokens as CSS
 import qualified Data.Markdown.HtmlWhiteLists as WhiteLists
+import qualified Data.Text.Normalize as Norm
 import qualified Generics.Generic.Aeson as Aeson
 import qualified Text.HTML.TagSoup as HTML
-
+import qualified Data.Char.Properties as UnicodeProps
 
 newtype Document = Markdown { unMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic, Typeable, Data)
@@ -60,9 +61,25 @@ instance Aeson.FromJSON Document where parseJSON = Aeson.gparseJson
 -- * validation and construction
 
 markdown :: ST -> Either [ST] Document
-markdown raw = case mconcat $ tokenToErrors <$> HTML.parseTags raw of
+markdown raw = case mconcat $ tokenToErrors <$> HTML.parseTags (sanitizeUnicode raw) of
     []  -> Right $ Markdown raw
     bad -> Left bad
+
+-- | I tried some things here to fix #1033 until the crash went away.  I don't really know what I'm
+-- doing here, hope I didn't break anything!  ~fisx
+sanitizeUnicode :: ST -> ST
+sanitizeUnicode = two . one
+  where
+    one = Norm.normalize Norm.NFD . Norm.normalize Norm.NFKD . Norm.normalize Norm.NFC . Norm.normalize Norm.NFKC
+    two = cs . mapMaybe f . cs
+      where
+        f c
+          | UnicodeProps.isWhiteSpace c = Just ' '
+          | UnicodeProps.gcMajorClass (UnicodeProps.getGeneralCategory c) == UnicodeProps.ClOther = Nothing
+          | otherwise = Just c
+
+mapMaybe :: (a -> Maybe b) -> [a] -> [b]
+mapMaybe f = catMaybes . fmap f
 
 tokenToErrors :: HTML.Tag ST -> [ST]
 tokenToErrors = mconcat . \case

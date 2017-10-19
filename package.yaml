@@ -88,6 +88,8 @@ dependencies:
     - text-icu
     - time
     - transformers
+    - unicode-properties
+    - unicode-transforms >= 0.3.3
     - vector
     - wai
     - wai-app-static
@@ -106,6 +108,13 @@ library:
 executables:
   aula-server:
     main: Aula.hs
+    source-dirs: exec
+    other-modules:
+    dependencies:
+      - aula
+
+  aula-migrate:
+    main: AulaMigrate.hs
     source-dirs: exec
     other-modules:
     dependencies:
