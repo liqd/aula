@@ -178,6 +178,9 @@ timestampFormat = "%F_%T_%q"
 timestampFormatLength :: Int
 timestampFormatLength = length ("1864-04-13_13:01:33_846177415049" :: String)
 
+simpleTimestampToHtmlDate :: Timestamp -> String
+simpleTimestampToHtmlDate = formatTime defaultTimeLocale "%d.%m.%Y" . unTimestamp
+
 showTimespan :: Timespan -> String
 showTimespan (TimespanUs    i) = show i <> "us"
 showTimespan (TimespanMs    i) = show i <> "ms"

@@ -274,6 +274,8 @@ instance ToHtml ViewIdea where
                 displayPhaseWithTime now phase
                 idea ^. ideaTitle . html
             div_ [class_ "sub-header meta-text"] $ do
+                idea ^. createdAt . to simpleTimestampToHtmlDate . html
+            div_ [class_ "sub-header meta-text"] $ do
                 "von "
                 a_ [ href_ $ U.userIdeas (idea ^. createdBy)
                    ] $ idea ^. createdByLogin . unUserLogin . html
