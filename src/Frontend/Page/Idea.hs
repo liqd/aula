@@ -448,8 +448,8 @@ instance FormPage CreateIdea where
 
     makeForm ci =
         ProtoIdea
-        <$> ("title"         .: validateIdeaTitle (DF.text Nothing))
-        <*> ("idea-text"     .: validate "Idee" markdownV (DF.text Nothing))
+        <$> ("title"         .: validateIdeaTitle (dftext Nothing))
+        <*> ("idea-text"     .: validate "Idee" markdownV (dftext Nothing))
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure (ci ^. ciLoc)
 
@@ -463,9 +463,9 @@ instance FormPage EditIdea where
 
     makeForm ei =
         ProtoIdea
-        <$> ("title"         .: validateIdeaTitle (DF.text . Just $ idea ^. ideaTitle))
+        <$> ("title"         .: validateIdeaTitle (dftext . Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .:
-                validate "Idee" markdownV (DF.text . Just . unMarkdown $ idea ^. ideaDesc))
+                validate "Idee" markdownV (dftext . Just . unMarkdown $ idea ^. ideaDesc))
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
       where

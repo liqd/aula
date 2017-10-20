@@ -33,6 +33,7 @@ import Action
 import Data.Delegation (unDelegate, unDelegatee)
 import Frontend.Core hiding (form)
 import Frontend.Prelude
+import Frontend.Validation (dftext)
 import Persistent
 
 import qualified Frontend.Path as U
@@ -60,7 +61,7 @@ instance FormPage PageDelegateVote where
 
     makeForm (PageDelegateVote _capCtx _scope options mselected) =
         PageDelegationVotePayload <$>
-            "selected-delegate" .: DF.validate valid (DF.text (render <$> mselected))
+            "selected-delegate" .: DF.validate valid (dftext (render <$> mselected))
       where
         render :: AUID User -> ST
         render = ("page-delegate-vote-uid." <>) . cs . show . view unAUID

@@ -274,7 +274,7 @@ semanticDivAttr :: forall a . Typeable a => a -> Attribute
 semanticDivAttr = makeAttribute "data-aula-type" . cs . show . typeOf
 
 type FormCS m r s = forall n.
-    (Monad n, Monad m, ConvertibleStrings r String, ConvertibleStrings String s)
+    (Monad n, Monad m, ConvertibleStrings r ST, ConvertibleStrings String s)
     => DF.Form (HtmlT n ()) m r -> DF.Form (HtmlT n ()) m s
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())

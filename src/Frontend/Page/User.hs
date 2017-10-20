@@ -449,7 +449,7 @@ instance FormPage EditUserProfile where
     makeForm (EditUserProfile _ctx user) =
         UserProfileUpdate
         <$> ("avatar" .: DF.validateM validateImageFile DF.file)
-        <*> ("desc"   .: validate "Beschreibung" markdownV (DF.text . Just . unMarkdown $ user ^. userDesc))
+        <*> ("desc"   .: validate "Beschreibung" markdownV (dftext . Just . unMarkdown $ user ^. userDesc))
 
     formPage v form p@(EditUserProfile ctx user) = do
         semanticDiv' [class_ "container-main container-narrow"] p $ do

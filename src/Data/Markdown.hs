@@ -24,12 +24,14 @@
 module Data.Markdown
   ( Document, markdown, unMarkdown
   , PlainDocument(PlainDocument), unDescription
+  , sanitizeUnicode
   )
 where
 
 import Data.CaseInsensitive
 import Control.Lens
 import Data.Binary
+import Data.Char (ord)
 import Data.Data
 import Data.List ((\\))
 import Data.Maybe (catMaybes)
@@ -38,11 +40,13 @@ import Data.String.Conversions
 import GHC.Generics (Generic)
 
 import qualified Data.Aeson as Aeson
+import qualified Data.Char.Properties as UnicodeProps
 import qualified Data.CSS.Syntax.Tokens as CSS
 import qualified Data.Markdown.HtmlWhiteLists as WhiteLists
+import qualified Data.Text as ST
+import qualified Data.Text.Normalize as Norm
 import qualified Generics.Generic.Aeson as Aeson
-import qualified Text.HTML.Parser as HTML
-
+import qualified Text.HTML.TagSoup as HTML
 
 newtype Document = Markdown { unMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic, Typeable, Data)
@@ -60,15 +64,32 @@ instance Aeson.FromJSON Document where parseJSON = Aeson.gparseJson
 -- * validation and construction
 
 markdown :: ST -> Either [ST] Document
-markdown raw = case mconcat $ tokenToErrors <$> HTML.tagStream raw of
+markdown raw = case mconcat $ tokenToErrors <$> HTML.parseTags (sanitizeUnicode raw) of
     []  -> Right $ Markdown raw
     bad -> Left bad
 
-tokenToErrors :: HTML.Token -> [ST]
+-- | We tried some things here to fix #1033.  The work-around turned out to just disallow all
+-- non-basic-latin characters.  Sad.
+sanitizeUnicode :: ST -> ST
+sanitizeUnicode = _three
+  where
+    _one, _two, _three :: ST -> ST
+    _one = Norm.normalize Norm.NFD . Norm.normalize Norm.NFKD . Norm.normalize Norm.NFC . Norm.normalize Norm.NFKC
+    _two = cs . mapMaybe f . cs
+      where
+        f c
+          | UnicodeProps.isWhiteSpace c = Just ' '
+          | UnicodeProps.gcMajorClass (UnicodeProps.getGeneralCategory c) == UnicodeProps.ClOther = Nothing
+          | otherwise = Just c
+    _three = ST.filter $ \(c :: Char) -> ord c < 256
+
+mapMaybe :: (a -> Maybe b) -> [a] -> [b]
+mapMaybe f = catMaybes . fmap f
+
+tokenToErrors :: HTML.Tag ST -> [ST]
 tokenToErrors = mconcat . \case
     (HTML.TagOpen el attrs) -> badEl el : (badAttr el <$> attrs)
     (HTML.TagClose el)      -> [badEl el]
-    (HTML.Doctype _)        -> [["doc type not allowed"]]
     _                       -> []
 
 
@@ -78,8 +99,8 @@ badEl (mk -> el) =
   where
     WhiteLists.HtmlElements els = WhiteLists.htmlElements
 
-badAttr :: ST -> HTML.Attr -> [ST]
-badAttr (mk -> el) (HTML.Attr (mk -> akey) (mk -> aval)) =
+badAttr :: ST -> HTML.Attribute ST -> [ST]
+badAttr (mk -> el) (mk -> akey, mk -> aval) =
     ["unsafe html attribute: " <> foldedCase akey
         | not $ any (`elem` attrs) [(Nothing, akey), (Just el, akey)]]
     <> badCssPropsIn akey aval

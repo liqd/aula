@@ -87,9 +87,9 @@ instance FormPage FinalizePasswordViaEmail where
         DF.check "Die neuen Passwörter passen nicht (Tippfehler?)" checkNewPassword
         $ FinalizePasswordViaEmailPayload
             <$> ("new-password1" .:
-                    validate "neues Passwort" passwordV (DF.text Nothing))
+                    validate "neues Passwort" passwordV (dftextraw Nothing))
             <*> ("new-password2" .:
-                    validate "neues Passwort (Wiederholung)" passwordV (DF.text Nothing))
+                    validate "neues Passwort (Wiederholung)" passwordV (dftextraw Nothing))
                     -- FUTUREWORK: validating second password leads to obnoxious double-errors.
       where
         checkNewPassword u = newPassword1 u == newPassword2 u
