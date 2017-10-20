@@ -42,7 +42,19 @@ instance ToHtml CommentWidget where
 commentToHtml :: Monad m => CommentWidget -> HtmlT m ()
 commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
     header_ [class_ "comment-header"] $ do
-        comment ^. commentMeta . to AuthorWidget . html
+        let mi = comment ^. commentMeta
+
+        span_ $ do
+          div_ [class_ "author"] $ do
+            a_ [href_ $ U.viewUserIdProfile (mi ^. metaCreatedBy)] $ do
+                span_ [class_ "author-image"] $
+                    userAvatarImg' avatarSizeSmall (mi ^. metaCreatedBy) (mi ^. metaCreatedByLogin)
+                span_ [class_ "author-text"] $
+                    mi ^. metaCreatedByLogin . unUserLogin . html
+
+            span_ [class_ "author-text"] $
+              " am " <> (mi ^. metaCreatedAt . to simpleTimestampToHtmlDate . html)
+
         CommentVotesWidget (w ^. cwIdeaCaps) comment ^. html
     div_ [class_ "comments-body"] $ do
         if comment ^. commentDeleted
@@ -98,18 +110,3 @@ instance ToHtml CommentVotesWidget where
                 likeButton $
                     i_ [class_ $ "icon-thumbs-o-" <> vs] nil
           where vs = cs . lowerFirst $ show v
-
-
--- | (This was intended for more general use, but as long as we are only using it in this module, we
--- might as well keep it here.)
-newtype AuthorWidget a = AuthorWidget { _authorWidgetMeta :: MetaInfo a }
-
-instance (Typeable a) => ToHtml (AuthorWidget a) where
-    toHtmlRaw = toHtml
-    toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
-        div_ [class_ "author"] .
-            a_ [href_ $ U.viewUserIdProfile (mi ^. metaCreatedBy)] $ do
-                span_ [class_ "author-image"] $
-                    userAvatarImg' avatarSizeSmall (mi ^. metaCreatedBy) (mi ^. metaCreatedByLogin)
-                span_ [class_ "author-text"] $
-                    mi ^. metaCreatedByLogin . unUserLogin . html

@@ -68,6 +68,7 @@ instance ToHtml ListItemIdea where
                             idea ^. ideaTitle . html
                             span_ [class_ "ideas-list-author"] $ do
                                 "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . unUserLogin . html
+                                " am " <> idea ^. (ideaMeta . metaCreatedAt) . to simpleTimestampToHtmlDate . html
 
                 div_ [class_ "col-3-12 ideas-list-indicator-container"] $ do
                     div_ [class_ "icon-list indicator-item m-inline m-display-only"] $ do
