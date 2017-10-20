@@ -57,8 +57,8 @@ instance FormPage PageHomeWithLoginPrompt where
     makeForm _ = validateM checkLogin $
         LoginFormData
         <$> ("user" .: validate "Login" usernameV (DF.string Nothing))
-        <*> ("pass" .: dftext Nothing)
-            -- FIXME: No validation is needed when login only when setting/changing passwords.
+        <*> ("pass" .: dftextraw Nothing)
+            -- FUTUREWORK: No validation is needed when login only when setting/changing passwords.
 
     formPage v form p@(PageHomeWithLoginPrompt loginDemoHints) =
         semanticDiv p $ do

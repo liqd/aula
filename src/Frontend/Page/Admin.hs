@@ -1003,7 +1003,7 @@ instance FormPage PageAdminResetPassword where
     redirectOf (PageAdminResetPassword u _p) _ = U.adminEditUser u
 
     makeForm (PageAdminResetPassword _u p) =
-        InitialPassword <$> ("new-pwd" .: dftext (p ^. unInitialPassword . to Just))
+        InitialPassword <$> ("new-pwd" .: dftextraw (p ^. unInitialPassword . to Just))
 
     formPage v form p@(PageAdminResetPassword usr pwd) = adminFrame p . semanticDiv p $ do
         h3_ $ "Passwort zurücksetzen für Nutzer #" <> usr ^. _Id . unAUID . showed . html

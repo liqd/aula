@@ -11,6 +11,7 @@ module Frontend.Validation
 
       -- * field validation
     , dftext
+    , dftextraw
     , FieldValidator
     , FieldName
     , FieldParser
@@ -67,6 +68,9 @@ type FieldParser a = Parsec String () a
 
 dftext :: (Monoid v, Monad m) => Formlet v m ST.Text
 dftext = DF.text . fmap sanitizeUnicode
+
+dftextraw :: (Monoid v, Monad m) => Formlet v m ST.Text
+dftextraw = DF.text
 
 newtype FieldValidator a b = FieldValidator { unFieldValidator :: a -> DF.Result [ST] b }
 
