@@ -52,7 +52,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
                 span_ [class_ "author-text"] $
                     mi ^. metaCreatedByLogin . unUserLogin . html
 
-            span_ [class_ "author-text"] $
+            span_ [class_ "author-timestamp"] $
               " am " <> (mi ^. metaCreatedAt . to simpleTimestampToHtmlDate . html)
 
         CommentVotesWidget (w ^. cwIdeaCaps) comment ^. html

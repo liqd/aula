@@ -83,6 +83,12 @@ $author-image-size: 37px;
         font-weight: bold;
         line-height: $author-image-size;
     }
+
+    .author-timestamp {
+        font-weight: normal;
+        line-height: $author-image-size;
+        font-size: $font-size-smaller;
+    }
 }
 
 .comment-votes {
