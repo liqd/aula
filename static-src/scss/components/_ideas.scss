@@ -85,6 +85,7 @@
     .ideas-list-author {
         display: block;
         font-size: $font-size-small;
+        color: $color-grey-mid;
     }
 
     @media screen and (max-width: $mobile-breakpoint) {
