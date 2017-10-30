@@ -191,7 +191,7 @@ top Top            = nil
 top (TopMain p)    = relPath p
 top (TopTesting p) = nil </> "testing" <> p
 top TopSamples     = nil </> "samples"
-top (TopStatic p)  = nil </> "static" <> p
+top (TopStatic p)  = nil </> "static" <> (p </?> ("201710301257", Nothing))  -- primitive way of cache busting.
 top (TopAvatar p)  = nil </> "avatar" <> p
 
 
