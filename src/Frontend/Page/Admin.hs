@@ -662,40 +662,39 @@ instance FormPage AdminEditUser where
                 if yes then pure . DF.Success $ Just lgin
                        else pure . DF.Error   $ "login ist bereits vergeben"
 
-
     formPage v form p@(AdminEditUser user) =
-        adminFrame p . semanticDiv' [class_ "admin-container"] p . form $ do
-            div_ [class_ "col-9-12 admin-body"] $ do
+        adminFrame p . semanticDiv' [class_ "admin-container"] p $ do
+          div_ [class_ "col-9-12 admin-body"] $ do
+            div_ [style_ "border: dotted 1px black; margin-bottom: 18px; padding: 9px"] . form $ do
                 h1_ [class_ "admin-main-heading"] $ do
                     span_ [class_ "label-text"] "Login"
                     inputText_ [class_ "m-stretch"] "login" v
+                DF.inputSubmit "Neues Login speichern"
 
-                -- For some reason the first form element inside another
-                -- form element is not rendered in the HTML DOM. This is
-                -- a hack make the first remove role element a rendered one.
-                postButton_ [hidden_ ""] U.Broken ""
-
+            div_ $ do
+              div_ [style_ "border: dotted 1px black; margin-bottom: 18px; padding: 9px"] $ do
                 table_ [class_ "admin-roles"] $ do
                     thead_ . tr_ $ do
                         th_ "Nutzerrolle"
                         th_ "Klasse"
                         th_ nil
                     tbody_ . forM_ (user ^.. userRoles) $ \role_ -> tr_ $ do
-                        td_ $ role_ ^. uilabeledST . html
-                        td_ $ role_ ^. roleSchoolClass . _Just . uilabeledST . html
-                        td_ $ postButton_
+                        td_ [style_ "padding: 9px"] $ role_ ^. uilabeledST . html
+                        td_ [style_ "padding: 9px"] $ role_ ^. roleSchoolClass . _Just . uilabeledST . html
+                        td_ [style_ "padding: 9px"] $ postButton_
                                 [ class_ "btn-cta"
                                 , jsReloadOnClickConfirm "Soll diese Rolle wirklich entfernt werden?"
                                 ]
                                 (U.adminRemRole user role_) "Rolle löschen"
+
+              div_ [style_ "border: dotted 1px black; margin-bottom: 18px; padding: 9px"] $ do
                 div_ [class_ "admin-buttons"] $ do
                     a_ [href_ $ U.adminAddRole user, class_ "btn-cta"] "Rolle hinzufügen"
                     br_ []
                     a_ [href_ $ U.adminResetPassword user, class_ "btn-cta"] "Passwort zurücksetzen"
                     br_ []
                     a_ [href_ $ U.adminDeleteUser user, class_ "btn-cta"] "Nutzer löschen"
-                    br_ []
-                    DF.inputSubmit "Änderungen speichern"
+
 
 instance FormPage AdminEditClass where
     type FormPagePayload AdminEditClass = ClassName
