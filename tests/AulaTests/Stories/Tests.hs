@@ -27,8 +27,8 @@ topicTimeoutStory :: Behavior ()
 topicTimeoutStory = do
     login "admin" "pssst"
     selectIdeaSpace "school"
-    createIdea idea1a "desc" CatRules
-    editIdea idea1a idea1 "desc1" CatRules
+    createIdea idea1a "desc" Cat1
+    editIdea idea1a idea1 "desc1" Cat1
     setFreeze Frozen
     likeIdea idea1  -- succeeds, prevented by hiding UI elements
     setFreeze NotFrozen
@@ -69,7 +69,7 @@ someUserBehavior :: Behavior ()
 someUserBehavior = do
     login "admin" "pssst"
     selectIdeaSpace "school"
-    createIdea idea1 "desc" CatRules
+    createIdea idea1 "desc" Cat1
     commentOnIdea idea1 comment1
     replyToComment idea1 comment1 comment2
     reportComment idea1 comment1 "Report this"
@@ -93,7 +93,7 @@ bumpTopicBackAndForth :: Behavior ()
 bumpTopicBackAndForth = do
     login "admin" "pssst"
     selectIdeaSpace "school"
-    createIdea idea1 "description" CatTime
+    createIdea idea1 "description" Cat2
     createTopic idea1 topic1a "description"  -- start in refinement
     moveTopicForward topic1a                 -- move to jury
     moveTopicForward topic1a                 -- move to voting

@@ -67,28 +67,12 @@
                 cursor: default;
             }
 
-            &.icon-rules {
+            &.icon-cat1 {
                 @include svg(icon_regeln);
             }
 
-            &.icon-equipment {
+            &.icon-cat2 {
                 @include svg(icon_ausstattung);
-            }
-
-            &.icon-activities {
-                @include svg(icon_aktivitaeten);
-            }
-
-            &.icon-teaching {
-                @include svg(icon_unterricht);
-            }
-
-            &.icon-time {
-                @include svg(icon_zeit);
-            }
-
-            &.icon-environment {
-                @include svg(icon_umgebung);
             }
 
             &.icon-all-cats {

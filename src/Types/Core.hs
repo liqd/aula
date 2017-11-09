@@ -305,12 +305,8 @@ type instance Proto Idea = ProtoIdea
 
 -- | "Kategorie"
 data Category =
-    CatRules        -- ^ "Regel"
-  | CatEquipment    -- ^ "Ausstattung"
-  | CatActivities   -- ^ "Aktivitäten"
-  | CatTeaching     -- ^ "Unterricht"
-  | CatTime         -- ^ "Zeit"
-  | CatEnvironment  -- ^ "Umgebung"
+    Cat1
+  | Cat2
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic, Typeable, Data)
 
 -- | With delegation of likes, a unit type isn't enough for this, we need a boolean.  If a delegate
@@ -730,30 +726,18 @@ instance HasUriPart Role where
 
 instance HasUILabel Category where
     uilabel = \case
-        CatRules       -> "Regeln"
-        CatEquipment   -> "Ausstattung"
-        CatActivities  -> "Aktivitäten"
-        CatTeaching    -> "Unterricht"
-        CatTime        -> "Zeit"
-        CatEnvironment -> "Umgebung"
+        Cat1       -> "Regeln"
+        Cat2   -> "Ausstattung"
 
 instance ToHttpApiData Category where
     toUrlPiece = \case
-        CatRules       -> "rules"
-        CatEquipment   -> "equipment"
-        CatActivities  -> "activities"
-        CatTeaching    -> "teaching"
-        CatTime        -> "time"
-        CatEnvironment -> "environment"
+        Cat1 -> "rules"
+        Cat2 -> "equipment"
 
 instance FromHttpApiData Category where
     parseUrlPiece = \case
-        "rules"       -> Right CatRules
-        "equipment"   -> Right CatEquipment
-        "activities"  -> Right CatActivities
-        "teaching"    -> Right CatTeaching
-        "time"        -> Right CatTime
-        "environment" -> Right CatEnvironment
+        "rules"       -> Right Cat1
+        "equipment"   -> Right Cat2
         _             -> Left "no parse"
 
 

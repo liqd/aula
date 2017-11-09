@@ -366,14 +366,14 @@ genInitialTestDb = do
     _wildIdea <- update $ AddIdea (EnvWith user1 now ProtoIdea
             { _protoIdeaTitle    = "wild-idea-title"
             , _protoIdeaDesc     = unsafeMarkdown "wild-idea-desc"
-            , _protoIdeaCategory = Just CatRules
+            , _protoIdeaCategory = Just Cat1
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
     topicIdea <- update $ AddIdea (EnvWith user2 now ProtoIdea
             { _protoIdeaTitle    = "topic-idea-title"
             , _protoIdeaDesc     = unsafeMarkdown "topic-idea-desc"
-            , _protoIdeaCategory = Just CatRules
+            , _protoIdeaCategory = Just Cat1
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
