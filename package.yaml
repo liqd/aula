@@ -153,6 +153,13 @@ executables:
     dependencies:
       - aula
 
+  aula-reset-all-passwords:
+    main: ResetAllPasswords.hs
+    source-dirs: exec
+    other-modules:
+    dependencies:
+      - aula
+
 tests:
   spec:
     main: Spec.hs

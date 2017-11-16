@@ -352,6 +352,7 @@ executable aula-avatars
       I18N
       InitState
       RenderHtml
+      ResetAllPasswords
   default-language: Haskell2010
 
 executable aula-html-dummies
@@ -433,6 +434,7 @@ executable aula-html-dummies
       AulaMigrate
       I18N
       InitState
+      ResetAllPasswords
       ResizeAvatar
   default-language: Haskell2010
 
@@ -514,6 +516,7 @@ executable aula-i18n
       AulaMigrate
       InitState
       RenderHtml
+      ResetAllPasswords
       ResizeAvatar
   default-language: Haskell2010
 
@@ -593,6 +596,7 @@ executable aula-init-state
       AulaMigrate
       I18N
       RenderHtml
+      ResetAllPasswords
       ResizeAvatar
   default-language: Haskell2010
 
@@ -669,6 +673,87 @@ executable aula-migrate
     , aula
   other-modules:
       Aula
+      I18N
+      InitState
+      RenderHtml
+      ResetAllPasswords
+      ResizeAvatar
+  default-language: Haskell2010
+
+executable aula-reset-all-passwords
+  main-is: ResetAllPasswords.hs
+  hs-source-dirs:
+      exec
+  ghc-options: -Wall -with-rtsopts=-T
+  build-depends:
+      base >=4.8 && <4.9
+    , thentos-cookie-session >=0.9.1 && <0.10
+    , aeson
+    , aeson-pretty
+    , aeson-qq
+    , acid-state >=0.14
+    , basic-sop
+    , binary
+    , bytestring
+    , case-insensitive
+    , cassava >= 0.4.5.0
+    , containers
+    , cookie
+    , cryptonite >=0.6 && <0.16
+    , css-syntax
+    , digestive-functors
+    , digestive-functors-lucid
+    , directory
+    , ekg
+    , ekg-core
+    , elocrypt >=0.4.1 && <0.5
+    , email-validate
+    , filepath
+    , functor-infix
+    , generic-aeson
+    , generics-sop
+    , tagsoup >=0.13.10
+    , http-client
+    , http-media
+    , http-types
+    , JuicyPixels >=3.2.6.2 && <3.3
+    , lens
+    , lucid
+    , mime-mail
+    , mtl
+    , parsec
+    , pretty-show
+    , process
+    , QuickCheck
+    , quickcheck-instances
+    , random
+    , safecopy
+    , scrypt
+    , servant >=0.7 && <0.8
+    , servant-lucid >=0.7 && <0.8
+    , servant-server >=0.7 && <0.8
+    , stm
+    , string-conversions
+    , template-haskell
+    , text
+    , text-icu
+    , time
+    , transformers
+    , unicode-properties
+    , unicode-transforms >= 0.3.3
+    , vector
+    , wai
+    , wai-app-static
+    , wai-middleware-metrics
+    , warp
+    , xlsx
+    , xlsx-templater
+    , yaml
+    , zip-archive
+    , aula
+  other-modules:
+      Aula
+      AulaMigrate
       I18N
       InitState
       RenderHtml
@@ -751,6 +836,7 @@ executable aula-server
       I18N
       InitState
       RenderHtml
+      ResetAllPasswords
       ResizeAvatar
   default-language: Haskell2010
 
