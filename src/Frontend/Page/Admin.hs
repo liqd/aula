@@ -1013,9 +1013,9 @@ instance FormPage PageAdminResetPassword where
                         td_ "Login:"
                         td_ $ usr ^. userLogin . unUserLogin . html
                     tr_ $ do
-                        td_ "New password:"
+                        td_ "Neues Passwort:"
                         td_ $ pwd ^. unInitialPassword . html
-                p_ "Soll diesees Passwort gesetzt werden?"
+                p_ "Soll dieses Passwort gesetzt werden?"
             div_ $ do
                 DF.inputHidden "new-pwd" v
                 DF.inputSubmit "Ja!"
