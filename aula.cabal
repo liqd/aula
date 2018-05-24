@@ -1,6 +1,8 @@
--- This file has been generated from package.yaml by hpack version 0.17.1.
+-- This file has been generated from package.yaml by hpack version 0.28.2.
 --
 -- see: https://github.com/sol/hpack
+--
+-- hash: f7509f62d4d9b1adc8a7c5a6ab8aacce14f1e30c3969704bbc69e1337dd7e5be
 
 name:           aula
 version:        0.37.0
@@ -15,7 +17,6 @@ license:        AGPL
 license-file:   LICENSE
 build-type:     Simple
 cabal-version:  >= 1.10
-
 data-files:
     default-avatars/default-profile-image.png
     docker/get-ip.sh
@@ -39,6 +40,7 @@ data-files:
     static/css/all.css.map
     static/d3-aula.css
     static/d3-aula.js
+    static/datenschutzerklaerung.html
     static/favicon.ico
     static/fonts/Cabin-Bold-webfont.eot
     static/fonts/Cabin-Bold-webfont.svg
@@ -136,17 +138,18 @@ library
       src
   ghc-options: -Wall -with-rtsopts=-T
   build-depends:
-      base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.1 && <0.10
+      JuicyPixels >=3.2.6.2 && <3.3
+    , QuickCheck
+    , acid-state >=0.14
     , aeson
     , aeson-pretty
     , aeson-qq
-    , acid-state >=0.14
+    , base >=4.8 && <4.9
     , basic-sop
     , binary
     , bytestring
     , case-insensitive
-    , cassava >= 0.4.5.0
+    , cassava >=0.4.5.0
     , containers
     , cookie
     , cryptonite >=0.6 && <0.16
@@ -162,11 +165,9 @@ library
     , functor-infix
     , generic-aeson
     , generics-sop
-    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
-    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail
@@ -174,7 +175,6 @@ library
     , parsec
     , pretty-show
     , process
-    , QuickCheck
     , quickcheck-instances
     , random
     , safecopy
@@ -184,13 +184,15 @@ library
     , servant-server >=0.7 && <0.8
     , stm
     , string-conversions
+    , tagsoup >=0.13.10
     , template-haskell
     , text
     , text-icu
+    , thentos-cookie-session >=0.9.1 && <0.10
     , time
     , transformers
     , unicode-properties
-    , unicode-transforms >= 0.3.3
+    , unicode-transforms >=0.3.3
     , vector
     , wai
     , wai-app-static
@@ -281,17 +283,19 @@ executable aula-avatars
       exec
   ghc-options: -Wall -with-rtsopts=-T
   build-depends:
-      base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.1 && <0.10
+      JuicyPixels >=3.2.6.2 && <3.3
+    , QuickCheck
+    , acid-state >=0.14
     , aeson
     , aeson-pretty
     , aeson-qq
-    , acid-state >=0.14
+    , aula
+    , base >=4.8 && <4.9
     , basic-sop
     , binary
     , bytestring
     , case-insensitive
-    , cassava >= 0.4.5.0
+    , cassava >=0.4.5.0
     , containers
     , cookie
     , cryptonite >=0.6 && <0.16
@@ -307,11 +311,9 @@ executable aula-avatars
     , functor-infix
     , generic-aeson
     , generics-sop
-    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
-    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail
@@ -319,7 +321,6 @@ executable aula-avatars
     , parsec
     , pretty-show
     , process
-    , QuickCheck
     , quickcheck-instances
     , random
     , safecopy
@@ -329,13 +330,15 @@ executable aula-avatars
     , servant-server >=0.7 && <0.8
     , stm
     , string-conversions
+    , tagsoup >=0.13.10
     , template-haskell
     , text
     , text-icu
+    , thentos-cookie-session >=0.9.1 && <0.10
     , time
     , transformers
     , unicode-properties
-    , unicode-transforms >= 0.3.3
+    , unicode-transforms >=0.3.3
     , vector
     , wai
     , wai-app-static
@@ -345,7 +348,6 @@ executable aula-avatars
     , xlsx-templater
     , yaml
     , zip-archive
-    , aula
   other-modules:
       Aula
       AulaMigrate
@@ -353,6 +355,7 @@ executable aula-avatars
       InitState
       RenderHtml
       ResetAllPasswords
+      Paths_aula
   default-language: Haskell2010
 
 executable aula-html-dummies
@@ -361,17 +364,19 @@ executable aula-html-dummies
       exec
   ghc-options: -Wall -with-rtsopts=-T
   build-depends:
-      base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.1 && <0.10
+      JuicyPixels >=3.2.6.2 && <3.3
+    , QuickCheck
+    , acid-state >=0.14
     , aeson
     , aeson-pretty
     , aeson-qq
-    , acid-state >=0.14
+    , aula
+    , base >=4.8 && <4.9
     , basic-sop
     , binary
     , bytestring
     , case-insensitive
-    , cassava >= 0.4.5.0
+    , cassava >=0.4.5.0
     , containers
     , cookie
     , cryptonite >=0.6 && <0.16
@@ -383,15 +388,16 @@ executable aula-html-dummies
     , ekg-core
     , elocrypt >=0.4.1 && <0.5
     , email-validate
+    , extra
     , filepath
+    , fsnotify
     , functor-infix
     , generic-aeson
     , generics-sop
-    , tagsoup >=0.13.10
+    , hspec
     , http-client
     , http-media
     , http-types
-    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail
@@ -399,7 +405,6 @@ executable aula-html-dummies
     , parsec
     , pretty-show
     , process
-    , QuickCheck
     , quickcheck-instances
     , random
     , safecopy
@@ -409,13 +414,15 @@ executable aula-html-dummies
     , servant-server >=0.7 && <0.8
     , stm
     , string-conversions
+    , tagsoup >=0.13.10
     , template-haskell
     , text
     , text-icu
+    , thentos-cookie-session >=0.9.1 && <0.10
     , time
     , transformers
     , unicode-properties
-    , unicode-transforms >= 0.3.3
+    , unicode-transforms >=0.3.3
     , vector
     , wai
     , wai-app-static
@@ -425,10 +432,6 @@ executable aula-html-dummies
     , xlsx-templater
     , yaml
     , zip-archive
-    , aula
-    , extra
-    , fsnotify
-    , hspec
   other-modules:
       Aula
       AulaMigrate
@@ -436,6 +439,7 @@ executable aula-html-dummies
       InitState
       ResetAllPasswords
       ResizeAvatar
+      Paths_aula
   default-language: Haskell2010
 
 executable aula-i18n
@@ -444,17 +448,20 @@ executable aula-i18n
       exec
   ghc-options: -Wall -with-rtsopts=-T
   build-depends:
-      base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.1 && <0.10
+      JuicyPixels >=3.2.6.2 && <3.3
+    , QuickCheck
+    , acid-state >=0.14
     , aeson
+    , aeson-extra
     , aeson-pretty
     , aeson-qq
-    , acid-state >=0.14
+    , aula
+    , base >=4.8 && <4.9
     , basic-sop
     , binary
     , bytestring
     , case-insensitive
-    , cassava >= 0.4.5.0
+    , cassava >=0.4.5.0
     , containers
     , cookie
     , cryptonite >=0.6 && <0.16
@@ -470,11 +477,9 @@ executable aula-i18n
     , functor-infix
     , generic-aeson
     , generics-sop
-    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
-    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail
@@ -482,7 +487,6 @@ executable aula-i18n
     , parsec
     , pretty-show
     , process
-    , QuickCheck
     , quickcheck-instances
     , random
     , safecopy
@@ -492,13 +496,16 @@ executable aula-i18n
     , servant-server >=0.7 && <0.8
     , stm
     , string-conversions
+    , tagsoup >=0.13.10
     , template-haskell
     , text
     , text-icu
+    , thentos-cookie-session >=0.9.1 && <0.10
     , time
     , transformers
     , unicode-properties
-    , unicode-transforms >= 0.3.3
+    , unicode-transforms >=0.3.3
+    , unordered-containers
     , vector
     , wai
     , wai-app-static
@@ -508,9 +515,6 @@ executable aula-i18n
     , xlsx-templater
     , yaml
     , zip-archive
-    , aula
-    , aeson-extra
-    , unordered-containers
   other-modules:
       Aula
       AulaMigrate
@@ -518,6 +522,7 @@ executable aula-i18n
       RenderHtml
       ResetAllPasswords
       ResizeAvatar
+      Paths_aula
   default-language: Haskell2010
 
 executable aula-init-state
@@ -526,17 +531,19 @@ executable aula-init-state
       exec
   ghc-options: -Wall -with-rtsopts=-T
   build-depends:
-      base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.1 && <0.10
+      JuicyPixels >=3.2.6.2 && <3.3
+    , QuickCheck
+    , acid-state >=0.14
     , aeson
     , aeson-pretty
     , aeson-qq
-    , acid-state >=0.14
+    , aula
+    , base >=4.8 && <4.9
     , basic-sop
     , binary
     , bytestring
     , case-insensitive
-    , cassava >= 0.4.5.0
+    , cassava >=0.4.5.0
     , containers
     , cookie
     , cryptonite >=0.6 && <0.16
@@ -552,11 +559,9 @@ executable aula-init-state
     , functor-infix
     , generic-aeson
     , generics-sop
-    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
-    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail
@@ -564,7 +569,6 @@ executable aula-init-state
     , parsec
     , pretty-show
     , process
-    , QuickCheck
     , quickcheck-instances
     , random
     , safecopy
@@ -574,13 +578,15 @@ executable aula-init-state
     , servant-server >=0.7 && <0.8
     , stm
     , string-conversions
+    , tagsoup >=0.13.10
     , template-haskell
     , text
     , text-icu
+    , thentos-cookie-session >=0.9.1 && <0.10
     , time
     , transformers
     , unicode-properties
-    , unicode-transforms >= 0.3.3
+    , unicode-transforms >=0.3.3
     , vector
     , wai
     , wai-app-static
@@ -590,7 +596,6 @@ executable aula-init-state
     , xlsx-templater
     , yaml
     , zip-archive
-    , aula
   other-modules:
       Aula
       AulaMigrate
@@ -598,6 +603,7 @@ executable aula-init-state
       RenderHtml
       ResetAllPasswords
       ResizeAvatar
+      Paths_aula
   default-language: Haskell2010
 
 executable aula-migrate
@@ -606,17 +612,19 @@ executable aula-migrate
       exec
   ghc-options: -Wall -with-rtsopts=-T
   build-depends:
-      base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.1 && <0.10
+      JuicyPixels >=3.2.6.2 && <3.3
+    , QuickCheck
+    , acid-state >=0.14
     , aeson
     , aeson-pretty
     , aeson-qq
-    , acid-state >=0.14
+    , aula
+    , base >=4.8 && <4.9
     , basic-sop
     , binary
     , bytestring
     , case-insensitive
-    , cassava >= 0.4.5.0
+    , cassava >=0.4.5.0
     , containers
     , cookie
     , cryptonite >=0.6 && <0.16
@@ -632,11 +640,9 @@ executable aula-migrate
     , functor-infix
     , generic-aeson
     , generics-sop
-    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
-    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail
@@ -644,7 +650,6 @@ executable aula-migrate
     , parsec
     , pretty-show
     , process
-    , QuickCheck
     , quickcheck-instances
     , random
     , safecopy
@@ -654,13 +659,15 @@ executable aula-migrate
     , servant-server >=0.7 && <0.8
     , stm
     , string-conversions
+    , tagsoup >=0.13.10
     , template-haskell
     , text
     , text-icu
+    , thentos-cookie-session >=0.9.1 && <0.10
     , time
     , transformers
     , unicode-properties
-    , unicode-transforms >= 0.3.3
+    , unicode-transforms >=0.3.3
     , vector
     , wai
     , wai-app-static
@@ -670,7 +677,6 @@ executable aula-migrate
     , xlsx-templater
     , yaml
     , zip-archive
-    , aula
   other-modules:
       Aula
       I18N
@@ -678,6 +684,7 @@ executable aula-migrate
       RenderHtml
       ResetAllPasswords
       ResizeAvatar
+      Paths_aula
   default-language: Haskell2010
 
 executable aula-reset-all-passwords
@@ -686,17 +693,19 @@ executable aula-reset-all-passwords
       exec
   ghc-options: -Wall -with-rtsopts=-T
   build-depends:
-      base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.1 && <0.10
+      JuicyPixels >=3.2.6.2 && <3.3
+    , QuickCheck
+    , acid-state >=0.14
     , aeson
     , aeson-pretty
     , aeson-qq
-    , acid-state >=0.14
+    , aula
+    , base >=4.8 && <4.9
     , basic-sop
     , binary
     , bytestring
     , case-insensitive
-    , cassava >= 0.4.5.0
+    , cassava >=0.4.5.0
     , containers
     , cookie
     , cryptonite >=0.6 && <0.16
@@ -712,11 +721,9 @@ executable aula-reset-all-passwords
     , functor-infix
     , generic-aeson
     , generics-sop
-    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
-    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail
@@ -724,7 +731,6 @@ executable aula-reset-all-passwords
     , parsec
     , pretty-show
     , process
-    , QuickCheck
     , quickcheck-instances
     , random
     , safecopy
@@ -734,13 +740,15 @@ executable aula-reset-all-passwords
     , servant-server >=0.7 && <0.8
     , stm
     , string-conversions
+    , tagsoup >=0.13.10
     , template-haskell
     , text
     , text-icu
+    , thentos-cookie-session >=0.9.1 && <0.10
     , time
     , transformers
     , unicode-properties
-    , unicode-transforms >= 0.3.3
+    , unicode-transforms >=0.3.3
     , vector
     , wai
     , wai-app-static
@@ -750,7 +758,6 @@ executable aula-reset-all-passwords
     , xlsx-templater
     , yaml
     , zip-archive
-    , aula
   other-modules:
       Aula
       AulaMigrate
@@ -758,6 +765,7 @@ executable aula-reset-all-passwords
       InitState
       RenderHtml
       ResizeAvatar
+      Paths_aula
   default-language: Haskell2010
 
 executable aula-server
@@ -766,17 +774,19 @@ executable aula-server
       exec
   ghc-options: -Wall -with-rtsopts=-T
   build-depends:
-      base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.1 && <0.10
+      JuicyPixels >=3.2.6.2 && <3.3
+    , QuickCheck
+    , acid-state >=0.14
     , aeson
     , aeson-pretty
     , aeson-qq
-    , acid-state >=0.14
+    , aula
+    , base >=4.8 && <4.9
     , basic-sop
     , binary
     , bytestring
     , case-insensitive
-    , cassava >= 0.4.5.0
+    , cassava >=0.4.5.0
     , containers
     , cookie
     , cryptonite >=0.6 && <0.16
@@ -792,11 +802,9 @@ executable aula-server
     , functor-infix
     , generic-aeson
     , generics-sop
-    , tagsoup >=0.13.10
     , http-client
     , http-media
     , http-types
-    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail
@@ -804,7 +812,6 @@ executable aula-server
     , parsec
     , pretty-show
     , process
-    , QuickCheck
     , quickcheck-instances
     , random
     , safecopy
@@ -814,13 +821,15 @@ executable aula-server
     , servant-server >=0.7 && <0.8
     , stm
     , string-conversions
+    , tagsoup >=0.13.10
     , template-haskell
     , text
     , text-icu
+    , thentos-cookie-session >=0.9.1 && <0.10
     , time
     , transformers
     , unicode-properties
-    , unicode-transforms >= 0.3.3
+    , unicode-transforms >=0.3.3
     , vector
     , wai
     , wai-app-static
@@ -830,7 +839,6 @@ executable aula-server
     , xlsx-templater
     , yaml
     , zip-archive
-    , aula
   other-modules:
       AulaMigrate
       I18N
@@ -838,6 +846,7 @@ executable aula-server
       RenderHtml
       ResetAllPasswords
       ResizeAvatar
+      Paths_aula
   default-language: Haskell2010
 
 test-suite spec
@@ -847,22 +856,25 @@ test-suite spec
       tests
   ghc-options: -Wall -with-rtsopts=-T
   build-depends:
-      base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.1 && <0.10
+      HUnit >=1.3
+    , JuicyPixels >=3.2.6.2 && <3.3
+    , QuickCheck >=2.8 && <2.9
+    , acid-state >=0.14
     , aeson
     , aeson-pretty
     , aeson-qq
-    , acid-state >=0.14
+    , aula
+    , base >=4.8 && <4.9
     , basic-sop
-    , binary
+    , binary >=0.7.5 && <0.8
     , bytestring
     , case-insensitive
-    , cassava >= 0.4.5.0
+    , cassava >=0.4.5.0
     , containers
     , cookie
     , cryptonite >=0.6 && <0.16
     , css-syntax
-    , digestive-functors
+    , digestive-functors >=0.8 && <0.9
     , digestive-functors-lucid
     , directory
     , ekg
@@ -870,14 +882,16 @@ test-suite spec
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
+    , free
     , functor-infix
     , generic-aeson
     , generics-sop
-    , tagsoup >=0.13.10
+    , hspec
+    , hspec-core
+    , hspec-wai
     , http-client
     , http-media
     , http-types
-    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail
@@ -885,54 +899,39 @@ test-suite spec
     , parsec
     , pretty-show
     , process
-    , QuickCheck
     , quickcheck-instances
     , random
     , safecopy
     , scrypt
     , servant >=0.7 && <0.8
     , servant-lucid >=0.7 && <0.8
-    , servant-server >=0.7 && <0.8
+    , servant-mock >=0.7 && <0.8
+    , servant-server
     , stm
     , string-conversions
+    , tagsoup >=0.13.10
     , template-haskell
+    , temporary >=1.2.0.3 && <1.3
     , text
     , text-icu
+    , thentos-cookie-session >=0.9.1 && <0.10
     , time
     , transformers
     , unicode-properties
-    , unicode-transforms >= 0.3.3
+    , unicode-transforms >=0.3.3
+    , unordered-containers
     , vector
     , wai
     , wai-app-static
+    , wai-extra
     , wai-middleware-metrics
     , warp
+    , webdriver
+    , wreq
     , xlsx
     , xlsx-templater
     , yaml
     , zip-archive
-    , aula
-    , base >=4.8 && <4.9
-    , binary >= 0.7.5 && <0.8
-    , digestive-functors >= 0.8 && <0.9
-    , free
-    , hspec
-    , hspec-core
-    , hspec-wai
-    , HUnit >= 1.3
-    , lens
-    , lucid
-    , mtl
-    , QuickCheck >= 2.8 && <2.9
-    , servant-mock >=0.7 && <0.8
-    , servant-server
-    , string-conversions
-    , temporary >=1.2.0.3 && <1.3
-    , text
-    , unordered-containers
-    , wai-extra
-    , wreq
-    , webdriver
   other-modules:
       ActionSpec
       AllModulesSpec
@@ -960,4 +959,5 @@ test-suite spec
       Test.QuickCheck.Missing
       Test.WebDriver.Missing
       TypesSpec
+      Paths_aula
   default-language: Haskell2010

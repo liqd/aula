@@ -59,7 +59,8 @@ printUsage = unSendLogMsg stderrLog $ LogEntry ERROR usage
 
 usage :: ST
 usage = ST.unlines
-    [ "Usage: aula-init-state --admin=username --admin-pwd=password --terms-of-use=terms.md"
+    [ "Create an admin user, terms of use file, default groups, initial database content."
+    , "Usage: aula-init-state --admin=<username> --admin-pwd=<password> --terms-of-use=terms.md"
     , "       $AULA_ROOT_PATH must be set to target directory."
     , "       Config file $AULA_ROOT_PATH/aula.yaml must exist."
     ]

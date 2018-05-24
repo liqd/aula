@@ -109,21 +109,18 @@ executables:
   aula-server:
     main: Aula.hs
     source-dirs: exec
-    other-modules:
     dependencies:
       - aula
 
   aula-migrate:
     main: AulaMigrate.hs
     source-dirs: exec
-    other-modules:
     dependencies:
       - aula
 
   aula-html-dummies:
     main: RenderHtml.hs
     source-dirs: exec
-    other-modules:
     dependencies:
       - aula
       - extra
@@ -133,14 +130,12 @@ executables:
   aula-avatars:
     main: ResizeAvatar.hs
     source-dirs: exec
-    other-modules:
     dependencies:
       - aula
 
   aula-i18n:
     main: I18N.hs
     source-dirs: exec
-    other-modules:
     dependencies:
       - aula
       - aeson-extra
@@ -149,14 +144,12 @@ executables:
   aula-init-state:
     main: InitState.hs
     source-dirs: exec
-    other-modules:
     dependencies:
       - aula
 
   aula-reset-all-passwords:
     main: ResetAllPasswords.hs
     source-dirs: exec
-    other-modules:
     dependencies:
       - aula
 
