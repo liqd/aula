@@ -5,7 +5,7 @@
 -- hash: f7509f62d4d9b1adc8a7c5a6ab8aacce14f1e30c3969704bbc69e1337dd7e5be
 
 name:           aula
-version:        0.37.0
+version:        0.38.0
 category:       Web
 homepage:       https://github.com/liqd/aula#readme
 bug-reports:    https://github.com/liqd/aula/issues
