@@ -28,8 +28,12 @@ function toggleMenu(el, out) {
 
 // Mobile menu
 
-document.getElementById("mobile-menu-button").onclick = function() {
-    toggleMenu(document.getElementById("main-header"));
+var menu_button = document.getElementById("mobile-menu-button");
+if (menu_button) {
+    // we only get into this block if we're logged in; otherwise there is no menu.
+    menu_button.onclick = function() {
+        toggleMenu(document.getElementById("main-header"));
+    }
 }
 
 // JS detection

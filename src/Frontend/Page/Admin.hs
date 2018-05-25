@@ -18,6 +18,8 @@
 module Frontend.Page.Admin
 where
 
+-- TODO: consider using servant-xml and xeno?
+
 import Codec.Xlsx (fromXlsx, toXlsx, xlSheets, CellValue(CellText))
 import Codec.Xlsx.Templater
 import Control.Arrow ((&&&))

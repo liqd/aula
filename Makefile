@@ -70,43 +70,43 @@ wc:
 content-login: .phony
 	rm -f cookie-jar
 	[ "$(AULA_MK_CONTENT_URL)" != "" ] || ( echo "set with e.g. 'export AULA_MK_CONTENT_URL=http://localhost:8080'"; false )
-	curl -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_MK_CONTENT_URL)/login
+	curl -L -v -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_MK_CONTENT_URL)/login
 
 test-wipe-ideas-and-topics:
 	make content-login
-	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/wipe
+	curl -L -v -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/wipe
 	rm -f cookie-jar
 
 content:
 	curl -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-init
 	make content-login
-	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-demo
-	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-votes
+	curl -L -v -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-demo
+	curl -L -v -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-votes
 	rm -f cookie-jar
 
 content-deleg:
 	make content-login
-	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-delegations
+	curl -L -v -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-delegations
 	rm -f cookie-jar
 
 fix-content:
 	make content-login
-	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/fix
+	curl -L -v -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/fix
 	rm -f cookie-jar
 
 testrenameclass:
 	make content-login
-	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/admin/class/2016-wef-wef-wef/edit
+	curl -L -v -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/admin/class/2016-wef-wef-wef/edit
 	rm -f cookie-jar
 
 testcsvclass:
 	make content-login
-	curl -b cookie-jar -O -v $(AULA_MK_CONTENT_URL)/admin/downloads/passwords/2016-wef-wef-wef/csv
+	curl -L -v -b cookie-jar -O -v $(AULA_MK_CONTENT_URL)/admin/downloads/passwords/2016-wef-wef-wef/csv
 	rm -f cookie-jar
 
 testxlsxclass:
 	make content-login
-	curl -b cookie-jar -O -v $(AULA_MK_CONTENT_URL)/admin/downloads/passwords/2016-wef-wef-wef/xlsx
+	curl -L -v -b cookie-jar -O -v $(AULA_MK_CONTENT_URL)/admin/downloads/passwords/2016-wef-wef-wef/xlsx
 	rm -f cookie-jar
 
 tags: .phony
