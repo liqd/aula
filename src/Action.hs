@@ -503,7 +503,7 @@ phaseAction topic phasact = do
           (\idea -> unmarkIdeaInJuryPhase (idea ^. _Id)) `mapM_` ideas
 
 -- FIXME: Only admin can do that
-topicForcePhaseChange :: (ActionM m) => PhaseChangeDir -> AUID Topic -> m ()
+topicForcePhaseChange :: forall m. (ActionM m) => PhaseChangeDir -> AUID Topic -> m ()
 topicForcePhaseChange dir tid = do
     now <- getCurrentTimestamp
     topic <- mquery $ findTopic tid
@@ -532,6 +532,7 @@ topicForcePhaseChange dir tid = do
                                        . RevertResultPhaseToVoting =<< query (phaseEndVote now)
   where
     -- this implicitly triggers the change to voting phase.
+    makeEverythingFeasible :: Topic -> m Phase
     makeEverythingFeasible topic = do
         let nonMarked = not . has (ideaJuryResult . _Just)
         ideas <- filter nonMarked <$> query (findIdeasByTopic topic)
