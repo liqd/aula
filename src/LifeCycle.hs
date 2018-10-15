@@ -31,6 +31,7 @@ data PhaseChange
 
 data PhaseAction
     = JuryPhasePrincipalEmail
+    | JuryPhaseCircumvent
     | ResultPhaseModeratorEmail
     | UnmarkAllIdeas
     -- FIXME: Add more action here.
@@ -54,7 +55,7 @@ thawPhase now = (phaseStatus     %~ thawStatus)
 
 phaseTrans :: Phase -> PhaseChange -> Maybe (Phase, [PhaseAction])
 phaseTrans (PhaseRefinement ActivePhase{}) PhaseTimeout
-    = Just (PhaseJury, [JuryPhasePrincipalEmail])
+    = Just (PhaseJury, [JuryPhaseCircumvent])
 phaseTrans PhaseJury AllIdeasAreMarked{_phaseChangeTimeout}
     = Just (PhaseVoting (ActivePhase _phaseChangeTimeout), [])
 phaseTrans (PhaseVoting ActivePhase{}) PhaseTimeout

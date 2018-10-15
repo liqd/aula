@@ -491,6 +491,8 @@ phaseAction topic phasact = do
               , _msgBody    = topicTemplate "Schulleitung" "Prüfungsphase"
               , _msgHtml    = Nothing -- Not supported yet
               }
+      JuryPhaseCircumvent ->
+          makeEverythingFeasible topic >> topicForcePhaseChange Forward (topic ^. topicMeta . metaKey)
       ResultPhaseModeratorEmail ->
           sendMailToRole Moderator EmailMessage
               { _msgSubjectLabel = topic ^. topicIdeaSpace . to IdeaSpaceSubject
