@@ -1,7 +1,12 @@
 
+## Important note: Inactive/unsupported project
+
+Please note: This repository contains an old version of the digital participation platform “Aula” that was used from 2016–2018 for piloting digital participation in schools across Germany. This version is not in active development anymore, so use and inspect at your own risk.
+
+
 project status | build status                                                                                          | more info
 ---------------|-------------------------------------------------------------------------------------------------------|--------------------------
-experimental   | [![Build Status](https://travis-ci.org/liqd/aula.svg?branch=master)](https://travis-ci.org/liqd/aula) | https://www.aula.de
+inactive   | [![Build Status](https://travis-ci.org/liqd/aula.svg?branch=master)](https://travis-ci.org/liqd/aula) | https://liqd.net
 
 
 ## Getting started (with docker)
