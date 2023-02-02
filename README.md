@@ -1,7 +1,9 @@
 
-## Important note: Inactive/unsupported project
+# Important note: Inactive/unsupported project
 
 Please note: This repository contains an old version of the digital participation platform “Aula” that was used from 2016–2018 for piloting digital participation in schools across Germany. This version is not in active development anymore, so use and inspect at your own risk.
+
+
 
 
 project status | build status                                                                                          | more info
